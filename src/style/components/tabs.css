@@ -1,0 +1,66 @@
+.codian-tab-bar-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.codian-tab-badges {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.codian-tab-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 2px solid var(--background-modifier-border);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-muted);
+  background: var(--background-primary);
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.codian-tab-badge:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.codian-tab-badge-active {
+  border-color: var(--interactive-accent);
+  color: var(--text-normal);
+}
+
+.codian-tab-badge-streaming {
+  border-color: var(--codian-brand, #da7756);
+}
+
+.codian-tab-badge-attention {
+  border-color: var(--text-error);
+}
+
+.codian-tab-badge-idle {
+  border-color: var(--background-modifier-border);
+}
+
+.codian-tab-content-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.codian-tab-content {
+  position: relative; /* For scroll-to-bottom button positioning */
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}

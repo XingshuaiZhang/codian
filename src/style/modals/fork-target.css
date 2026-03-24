@@ -1,0 +1,21 @@
+/* Fork Target Modal */
+.codian-fork-target-modal {
+  max-width: 340px;
+}
+
+.codian-fork-target-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.codian-fork-target-option {
+  padding: 10px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-normal);
+  font-size: 14px;
+}
+
+.codian-fork-target-option:hover {
+  background: var(--background-modifier-hover);
+}

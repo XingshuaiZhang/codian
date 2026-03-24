@@ -1,0 +1,103 @@
+/* Plan Mode - inline cards for EnterPlanMode / ExitPlanMode */
+
+.codian-plan-approval-inline {
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  outline: none;
+}
+
+.codian-plan-inline-title {
+  font-weight: 700;
+  color: var(--text-muted);
+  padding: 6px 10px 0;
+}
+
+/* ── Plan content preview ────────────────────────── */
+
+.codian-plan-content-preview {
+  max-height: 300px;
+  overflow-y: auto;
+  margin: 6px 10px 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-normal);
+}
+
+.codian-plan-content-preview::-webkit-scrollbar {
+  width: 4px;
+}
+
+.codian-plan-content-preview::-webkit-scrollbar-thumb {
+  background: var(--background-modifier-border);
+  border-radius: 2px;
+}
+
+.codian-plan-content-preview p {
+  margin: 0 0 6px;
+}
+
+.codian-plan-content-preview p:last-child {
+  margin-bottom: 0;
+}
+
+.codian-plan-content-preview h1,
+.codian-plan-content-preview h2,
+.codian-plan-content-preview h3,
+.codian-plan-content-preview h4 {
+  margin: 8px 0 4px;
+  font-size: 13px;
+}
+
+.codian-plan-content-preview ul,
+.codian-plan-content-preview ol {
+  margin: 2px 0 6px;
+  padding-left: 18px;
+}
+
+.codian-plan-content-preview li {
+  margin: 0;
+}
+
+.codian-plan-content-preview code {
+  font-size: 11px;
+}
+
+.codian-plan-content-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--font-monospace);
+}
+
+/* ── Permissions list ──────────────────────────── */
+
+.codian-plan-permissions {
+  padding: 4px 10px 8px;
+}
+
+.codian-plan-permissions-label {
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.codian-plan-permissions-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-normal);
+  line-height: 1.5;
+}
+
+.codian-plan-permissions-list li {
+  margin: 0;
+}
+
+/* ── Plan mode input border ──────────────────────── */
+
+.codian-input-wrapper.codian-input-plan-mode {
+  border-color: rgb(92, 148, 140) !important;
+  box-shadow: 0 0 0 1px rgb(92, 148, 140);
+}

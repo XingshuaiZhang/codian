@@ -1,0 +1,86 @@
+/* Header - logo, title/tabs slot, and actions */
+.codian-header {
+  display: flex;
+  align-items: center;
+  padding: 0 12px 12px 12px;
+}
+
+/* Title slot: contains logo + title (or tabs in header mode) */
+.codian-title-slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;  /* Allow flex item to shrink below content size */
+}
+
+/* Legacy class for backwards compatibility */
+.codian-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.codian-title-text {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.codian-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+}
+
+.codian-logo svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* Header actions (end side - always stays at end via margin-inline-start: auto) */
+.codian-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  margin-inline-start: auto;
+}
+
+.codian-header-actions-slot {
+  /* No margin-inline-start: auto here; it's set by the base .codian-header-actions */
+}
+
+.codian-header .codian-tab-bar-container {
+  display: flex;
+  gap: 4px;
+}
+
+.codian-header-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-faint);
+  transition: color 0.15s ease;
+}
+
+.codian-header-btn:hover {
+  color: var(--text-normal);
+}
+
+.codian-header-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.codian-new-tab-btn svg {
+  width: 16.8px;
+  height: 16.8px;
+}

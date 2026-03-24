@@ -1,0 +1,5551 @@
+/* Codian Plugin Styles */
+/* Built from src/style/ modules */
+
+
+/* ============================================
+   base/variables.css
+   ============================================ */
+/* Brand & semantic color tokens */
+.codian-container {
+  --codian-brand: #D97757;
+  --codian-brand-rgb: 217, 119, 87;
+  --codian-error: #dc3545;
+  --codian-error-rgb: 220, 53, 69;
+  --codian-compact: #5bc0de;
+}
+
+
+/* ============================================
+   base/container.css
+   ============================================ */
+.codian-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+}
+
+
+/* ============================================
+   base/animations.css
+   ============================================ */
+@keyframes thinking-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes external-context-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 2px rgba(var(--codian-brand-rgb), 0.4));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 6px rgba(var(--codian-brand-rgb), 0.8));
+  }
+}
+
+@keyframes mcp-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 2px rgba(124, 58, 237, 0.4));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 8px rgba(124, 58, 237, 0.9));
+  }
+}
+
+@keyframes codian-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* ============================================
+   components/header.css
+   ============================================ */
+/* Header - logo, title/tabs slot, and actions */
+.codian-header {
+  display: flex;
+  align-items: center;
+  padding: 0 12px 12px 12px;
+}
+
+/* Title slot: contains logo + title (or tabs in header mode) */
+.codian-title-slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;  /* Allow flex item to shrink below content size */
+}
+
+/* Legacy class for backwards compatibility */
+.codian-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.codian-title-text {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.codian-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+}
+
+.codian-logo svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* Header actions (end side - always stays at end via margin-inline-start: auto) */
+.codian-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  margin-inline-start: auto;
+}
+
+.codian-header-actions-slot {
+  /* No margin-inline-start: auto here; it's set by the base .codian-header-actions */
+}
+
+.codian-header .codian-tab-bar-container {
+  display: flex;
+  gap: 4px;
+}
+
+.codian-header-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-faint);
+  transition: color 0.15s ease;
+}
+
+.codian-header-btn:hover {
+  color: var(--text-normal);
+}
+
+.codian-header-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.codian-new-tab-btn svg {
+  width: 16.8px;
+  height: 16.8px;
+}
+
+
+/* ============================================
+   components/tabs.css
+   ============================================ */
+.codian-tab-bar-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.codian-tab-badges {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.codian-tab-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 2px solid var(--background-modifier-border);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-muted);
+  background: var(--background-primary);
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.codian-tab-badge:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.codian-tab-badge-active {
+  border-color: var(--interactive-accent);
+  color: var(--text-normal);
+}
+
+.codian-tab-badge-streaming {
+  border-color: var(--codian-brand, #da7756);
+}
+
+.codian-tab-badge-attention {
+  border-color: var(--text-error);
+}
+
+.codian-tab-badge-idle {
+  border-color: var(--background-modifier-border);
+}
+
+.codian-tab-content-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.codian-tab-content {
+  position: relative; /* For scroll-to-bottom button positioning */
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+
+/* ============================================
+   components/history.css
+   ============================================ */
+.codian-history-container {
+  position: relative;
+}
+
+/* History dropup menu (opens upward since it's at bottom of view) */
+.codian-history-menu {
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  inset-inline-end: 0;
+  margin-bottom: 4px;
+  background: var(--background-secondary);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.25);
+  z-index: 1000;
+  max-height: 400px;
+  overflow: hidden;
+  width: 280px;
+}
+
+.codian-history-menu.visible {
+  display: block;
+}
+
+/* Header mode: dropdown instead of dropup */
+.codian-container--header-mode .codian-history-menu {
+  bottom: auto;
+  top: 100%;
+  margin-bottom: 0;
+  margin-top: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.codian-history-header {
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.codian-history-list {
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.codian-history-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.codian-history-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  transition: background 0.15s ease;
+}
+
+.codian-history-item-icon {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.codian-history-item-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.codian-history-item:last-child {
+  border-bottom: none;
+}
+
+.codian-history-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.codian-history-item.active {
+  background: var(--background-secondary);
+  border-inline-start: 2px solid var(--interactive-accent);
+  padding-inline-start: 10px;
+}
+
+.codian-history-item.active .codian-history-item-icon {
+  color: var(--interactive-accent);
+}
+
+.codian-history-item.active .codian-history-item-content {
+  cursor: default;
+}
+
+.codian-history-item.active .codian-history-item-date {
+  color: var(--text-faint);
+}
+
+.codian-history-item-content {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.codian-history-item-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-normal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.codian-history-item-date {
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+
+.codian-history-item-actions {
+  display: flex;
+  gap: 4px;
+  margin-inline-start: 8px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.codian-history-item:hover .codian-history-item-actions {
+  opacity: 1;
+}
+
+.codian-action-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  color: var(--text-muted);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.codian-action-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.codian-action-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.codian-delete-btn:hover {
+  color: var(--color-red);
+}
+
+.codian-rename-input {
+  width: 100%;
+  padding: 2px 4px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--interactive-accent);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+}
+
+.codian-rename-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--interactive-accent-hover);
+}
+
+/* Loading indicator for title generation */
+.codian-action-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: spin 1s linear infinite;
+  opacity: 0.6;
+  cursor: default;
+}
+
+
+/* ============================================
+   components/messages.css
+   ============================================ */
+/* Messages wrapper (for scroll-to-bottom button positioning) */
+.codian-messages-wrapper {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.codian-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Focusable messages panel for vim-style navigation */
+.codian-messages-focusable:focus {
+  outline: none;
+}
+
+/* Welcome message */
+.codian-welcome {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+  min-height: 200px;
+}
+
+.codian-welcome-greeting {
+  font-family: 'Copernicus', 'Tiempos Headline', 'Tiempos', Georgia, 'Times New Roman', serif;
+  font-size: 28px;
+  font-weight: 300;
+  color: var(--text-muted);
+  letter-spacing: -0.01em;
+}
+
+.codian-message {
+  padding: 10px 14px;
+  border-radius: 8px;
+  max-width: 95%;
+  word-wrap: break-word;
+}
+
+.codian-message-user {
+  position: relative;
+  background: rgba(0, 0, 0, 0.3);
+  align-self: flex-end;
+  border-end-end-radius: 4px;
+}
+
+/* Text selection in user messages - visible highlight */
+.codian-message-user ::selection {
+  background: rgba(255, 255, 255, 0.35);
+  color: inherit;
+}
+
+.codian-message-assistant {
+  background: transparent;
+  align-self: stretch;
+  width: 100%;
+  max-width: 100%;
+  border-end-start-radius: 4px;
+  text-align: start;
+}
+
+.codian-message-content {
+  line-height: 1.5;
+  user-select: text;
+  -webkit-user-select: text;
+  unicode-bidi: plaintext; /* Proper BiDi text handling for mixed RTL/LTR */
+}
+
+.codian-interrupted {
+  color: #d45d5d;
+}
+
+.codian-interrupted-hint {
+  color: var(--text-muted);
+}
+
+.codian-text-block {
+  position: relative;
+  margin: 0;
+}
+
+.codian-text-copy-btn {
+  position: absolute;
+  bottom: 0;
+  inset-inline-end: 0;
+  border: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.codian-text-copy-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.codian-text-block:hover .codian-text-copy-btn {
+  opacity: 1;
+}
+
+.codian-text-copy-btn:hover {
+  color: var(--text-normal);
+}
+
+.codian-text-copy-btn.copied {
+  color: var(--text-accent);
+  font-size: 11px;
+  font-family: var(--font-monospace);
+}
+
+.codian-text-block+.codian-tool-call {
+  margin-top: 8px;
+}
+
+.codian-tool-call+.codian-text-block {
+  margin-top: 8px;
+}
+
+.codian-message-content p {
+  margin: 0 0 8px 0;
+}
+
+.codian-message-content p:last-child {
+  margin-bottom: 0;
+}
+
+.codian-message-content ul,
+.codian-message-content ol {
+  margin: 8px 0;
+  padding-inline-start: 20px;
+}
+
+/* Full-width tables */
+.codian-message-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+}
+
+.codian-message-content th,
+.codian-message-content td {
+  border: 1px solid var(--background-modifier-border);
+  padding: 6px 10px;
+  text-align: start;
+}
+
+.codian-message-content th {
+  background: var(--background-secondary);
+  font-weight: 600;
+}
+
+.codian-message-content tr:hover {
+  background: var(--background-secondary-alt);
+}
+
+.codian-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.codian-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.codian-messages::-webkit-scrollbar-thumb {
+  background: var(--background-modifier-border);
+  border-radius: 3px;
+}
+
+.codian-messages::-webkit-scrollbar-thumb:hover {
+  background: var(--background-modifier-border-hover);
+}
+
+/* Response duration footer - styled as another line of content */
+.codian-response-footer {
+  margin-top: 8px;
+}
+
+.codian-baked-duration {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  font-style: italic;
+}
+
+/* Action buttons toolbar below user messages */
+.codian-user-msg-actions {
+  position: absolute;
+  bottom: -20px;
+  right: 0;
+  display: flex;
+  gap: 12px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 1;
+}
+
+.codian-message-user:hover .codian-user-msg-actions {
+  opacity: 1;
+}
+
+.codian-user-msg-actions span {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+  transition: color 0.15s;
+}
+
+.codian-user-msg-actions span svg {
+  width: 16px;
+  height: 16px;
+}
+
+.codian-user-msg-actions span:hover {
+  color: var(--text-normal);
+}
+
+.codian-user-msg-actions span.copied {
+  color: var(--text-accent);
+  font-size: 11px;
+  font-family: var(--font-monospace);
+}
+
+/* Compact boundary indicator */
+.codian-compact-boundary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.codian-compact-boundary::before,
+.codian-compact-boundary::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--background-modifier-border);
+}
+
+.codian-compact-boundary-label {
+  color: var(--text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+
+/* ============================================
+   components/nav-sidebar.css
+   ============================================ */
+/* Navigation Sidebar */
+.codian-nav-sidebar {
+    position: absolute;
+    right: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.codian-nav-sidebar.visible {
+    opacity: 0.15;
+    pointer-events: auto;
+}
+
+.codian-nav-sidebar.visible:hover {
+    opacity: 1;
+}
+
+.codian-nav-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 16px;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.codian-nav-btn:hover {
+    background: var(--background-secondary);
+    color: var(--text-normal);
+    transform: scale(1.05);
+}
+
+.codian-nav-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Specific button spacing/grouping if needed */
+.codian-nav-btn-top {
+    margin-bottom: 4px;
+}
+
+.codian-nav-btn-bottom {
+    margin-top: 4px;
+}
+
+
+/* ============================================
+   components/code.css
+   ============================================ */
+/* Code block wrapper - contains pre + button outside scroll area */
+.codian-code-wrapper {
+  position: relative;
+  margin: 8px 0;
+}
+
+/* Code blocks in chat messages */
+.codian-code-wrapper pre,
+.codian-message-content pre {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 0;
+}
+
+/* Light mode: use a lighter background so hljs comment colors stay readable */
+body.theme-light .codian-code-wrapper pre,
+body.theme-light .codian-message-content pre {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* Code blocks without language - wrap content */
+.codian-code-wrapper:not(.has-language) pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-x: hidden;
+}
+
+/* Unwrapped pre still needs margin */
+.codian-message-content>pre {
+  margin: 8px 0;
+}
+
+.codian-message-content code {
+  font-family: var(--font-monospace);
+  font-size: 13px;
+}
+
+/* Clickable language label - positioned outside scroll area */
+.codian-code-wrapper .codian-code-lang-label {
+  position: absolute;
+  top: 6px;
+  inset-inline-end: 6px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-family: var(--font-monospace);
+  color: var(--text-faint);
+  background: var(--background-primary);
+  border-radius: 3px;
+  cursor: pointer;
+  z-index: 2;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.codian-code-wrapper .codian-code-lang-label:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+/* Hide default copy button when language label exists */
+.codian-code-wrapper.has-language .copy-code-button {
+  display: none;
+}
+
+/* Copy button - positioned outside scroll area */
+.codian-code-wrapper .copy-code-button {
+  position: absolute;
+  top: 6px;
+  inset-inline-end: 6px;
+  padding: 4px 8px;
+  font-size: 11px;
+  background: var(--background-primary);
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+  border-radius: 3px;
+  z-index: 2;
+}
+
+/* If copy button uses an icon (svg) */
+.codian-code-wrapper .copy-code-button svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Show copy button on hover */
+.codian-code-wrapper:not(.has-language):hover .copy-code-button {
+  opacity: 1;
+}
+
+.codian-code-wrapper .copy-code-button:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+/* ============================================
+   components/thinking.css
+   ============================================ */
+.codian-thinking {
+  color: var(--codian-brand);
+  font-style: italic;
+  padding: 4px 0;
+  text-align: start;
+  animation: thinking-pulse 1.5s ease-in-out infinite;
+}
+
+.codian-thinking.codian-thinking--compact {
+  color: var(--codian-compact);
+}
+
+.codian-thinking-hint {
+  color: var(--text-muted);
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+.codian-thinking-block {
+  margin: 8px 0;
+}
+
+.codian-text-block+.codian-thinking-block {
+  margin-top: 8px;
+}
+
+.codian-thinking-block+.codian-text-block {
+  margin-top: 8px;
+}
+
+.codian-thinking-block+.codian-tool-call {
+  margin-top: 8px;
+}
+
+.codian-tool-call+.codian-thinking-block {
+  margin-top: 8px;
+}
+
+.codian-thinking-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.codian-thinking-label {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--codian-brand);
+}
+
+/* Thinking block content - tree-branch style */
+.codian-thinking-content {
+  padding: 4px 0;
+  padding-inline-start: 24px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  max-height: 400px;
+  overflow-y: auto;
+  border-inline-start: 2px solid var(--background-modifier-border);
+  margin-inline-start: 7px;
+}
+
+.codian-thinking-content p {
+  margin: 0 0 8px 0;
+}
+
+.codian-thinking-content p:last-child {
+  margin-bottom: 0;
+}
+
+.codian-thinking-content .codian-code-wrapper {
+  margin: 8px 0;
+}
+
+.codian-thinking-content .codian-code-wrapper pre {
+  padding: 8px 10px;
+  border-radius: 4px;
+}
+
+.codian-thinking-content code {
+  font-family: var(--font-monospace);
+  font-size: 12px;
+}
+
+
+/* ============================================
+   components/toolcalls.css
+   ============================================ */
+.codian-tool-call {
+  margin: 8px 0;
+}
+
+.codian-tool-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.codian-tool-header:hover {
+  opacity: 0.85;
+}
+
+.codian-tool-icon {
+  display: flex;
+  align-items: center;
+  color: var(--text-accent);
+  flex-shrink: 0;
+}
+
+.codian-tool-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.codian-tool-name {
+  font-family: var(--font-monospace);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-normal);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.codian-tool-summary {
+  font-family: var(--font-monospace);
+  font-size: 13px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.codian-tool-summary:empty {
+  display: none;
+}
+
+/* Legacy: StatusPanel bash entries still use codian-tool-label */
+.codian-tool-label {
+  font-family: var(--font-monospace);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-normal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.codian-tool-current {
+  font-family: var(--font-monospace);
+  font-size: 13px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.codian-tool-current:empty {
+  display: none;
+}
+
+.codian-tool-status {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.codian-tool-status svg {
+  width: 14px;
+  height: 14px;
+}
+
+.codian-tool-status.status-running {
+  color: var(--text-accent);
+}
+
+.codian-tool-status.status-completed {
+  color: var(--color-green);
+}
+
+.codian-tool-status.status-error {
+  color: var(--color-red);
+}
+
+.codian-tool-status.status-blocked {
+  color: var(--color-orange);
+}
+
+/* Tool call content - border style (like thinking block) */
+.codian-tool-content {
+  padding: 4px 0;
+  padding-inline-start: 16px;
+  margin-inline-start: 7px;
+  border-inline-start: 2px solid var(--background-modifier-border);
+}
+
+/* Tool content variants that render inline widgets instead of bordered results */
+.codian-tool-content-todo,
+.codian-tool-content-ask {
+  border-inline-start: none;
+  margin-inline-start: 0;
+  padding-inline-start: 0;
+}
+
+/* Expanded content: per-line rendering */
+.codian-tool-lines {
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-x: auto;
+}
+
+.codian-tool-line {
+  padding: 1px 0;
+  color: var(--text-muted);
+  white-space: pre;
+}
+
+/* Hover highlight for file search results */
+.codian-tool-line.hoverable:hover {
+  background: var(--background-modifier-hover);
+}
+
+/* Truncation indicator: "... N more lines" */
+.codian-tool-truncated {
+  color: var(--text-faint);
+  font-style: italic;
+  padding: 4px 0;
+  font-family: var(--font-monospace);
+  font-size: 12px;
+}
+
+/* ToolSearch expanded: icon + tool name rows */
+.codian-tool-search-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.codian-tool-search-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  color: var(--text-faint);
+}
+
+.codian-tool-search-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Web search links */
+.codian-tool-link {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 3px 0;
+  color: var(--text-muted);
+  text-decoration: none;
+  cursor: pointer;
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.codian-tool-link:hover {
+  color: var(--text-accent);
+}
+
+.codian-tool-link-icon {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  margin-top: 2px;
+  color: var(--text-faint);
+}
+
+.codian-tool-link-icon svg {
+  width: 12px;
+  height: 12px;
+}
+
+.codian-tool-link-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Web search summary section */
+.codian-tool-web-summary {
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  color: var(--text-muted);
+  padding-top: 4px;
+  border-top: 1px solid var(--background-modifier-border);
+  margin-top: 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* Empty state for file search */
+.codian-tool-empty {
+  color: var(--text-faint);
+  font-style: italic;
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  padding: 4px 0;
+}
+
+.codian-tool-result-row {
+  display: flex;
+  align-items: flex-start;
+}
+
+.codian-tool-result-text {
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow: hidden;
+  flex: 1;
+}
+
+.codian-tool-result-item {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.codian-tool-result-item:last-child {
+  margin-bottom: 0;
+}
+
+
+
+/* ============================================
+   components/status-panel.css
+   ============================================ */
+/* Status Panel - persistent bottom panel for todos and command output */
+
+.codian-status-panel-container {
+  flex-shrink: 0;
+  padding: 0 14px;
+}
+
+.codian-status-panel {
+  padding-top: 12px;
+}
+
+/* Todo Section */
+
+.codian-status-panel-todos {
+  margin-top: 4px;
+}
+
+.codian-status-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+  overflow: hidden;
+}
+
+.codian-status-panel-header:hover {
+  background: var(--background-modifier-hover);
+}
+
+.codian-status-panel-header:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.codian-status-panel-icon {
+  display: flex;
+  align-items: center;
+  color: var(--text-accent);
+  flex-shrink: 0;
+}
+
+.codian-status-panel-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.codian-status-panel-label {
+  font-family: var(--font-monospace);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-normal);
+}
+
+.codian-status-panel-current {
+  flex: 1;
+  font-family: var(--font-monospace);
+  font-size: 13px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.codian-status-panel-status {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.codian-status-panel-status svg {
+  width: 14px;
+  height: 14px;
+}
+
+.codian-status-panel-status.status-completed {
+  color: var(--color-green);
+}
+
+.codian-status-panel-content {
+  padding: 2px 0;
+}
+
+/* Individual todo item - shared by status panel and inline tool via .codian-todo-list-container */
+.codian-todo-list-container .codian-todo-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 1px 0;
+}
+
+.codian-todo-list-container .codian-todo-status-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.codian-todo-list-container .codian-todo-status-icon svg {
+  width: 12px;
+  height: 12px;
+}
+
+.codian-todo-list-container .codian-todo-text {
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  line-height: 1.4;
+  flex: 1;
+  padding-left: 12px;
+}
+
+.codian-todo-list-container .codian-todo-pending .codian-todo-status-icon {
+  color: var(--text-normal);
+}
+
+.codian-todo-list-container .codian-todo-pending .codian-todo-status-icon svg {
+  transform: scale(2);
+}
+
+.codian-todo-list-container .codian-todo-pending .codian-todo-text {
+  color: var(--text-normal);
+}
+
+.codian-todo-list-container .codian-todo-in_progress .codian-todo-status-icon {
+  color: var(--interactive-accent);
+}
+
+.codian-todo-list-container .codian-todo-in_progress .codian-todo-status-icon svg {
+  transform: scale(2);
+}
+
+.codian-todo-list-container .codian-todo-in_progress .codian-todo-text {
+  color: var(--text-normal);
+}
+
+.codian-todo-list-container .codian-todo-completed .codian-todo-status-icon {
+  color: var(--color-green);
+}
+
+.codian-todo-list-container .codian-todo-completed .codian-todo-text {
+  color: var(--text-muted);
+}
+
+/* Bash Output Section */
+
+.codian-status-panel-bash {
+  margin-bottom: 4px;
+}
+
+.codian-status-panel-bash-header {
+  padding: 4px 0;
+}
+
+.codian-status-panel-bash-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.codian-status-panel-bash-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  color: var(--text-muted);
+}
+
+.codian-status-panel-bash-action:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.codian-status-panel-bash-content {
+  padding-top: 2px;
+  max-height: 320px;
+  max-height: min(40vh, 320px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.codian-status-panel-bash-entry {
+  margin: 4px 0;
+}
+
+.codian-status-panel-bash-entry .codian-tool-icon svg {
+  width: 14px;
+  height: 14px;
+  position: relative;
+  top: -1px;
+}
+
+.codian-status-panel-bash-entry .codian-tool-call {
+  margin: 0;
+}
+
+/* Keep bash output blocks from growing without bound */
+.codian-status-panel-bash-entry .codian-tool-result-text {
+  max-height: 200px;
+  overflow-y: auto;
+  word-break: break-word;
+}
+
+
+/* ============================================
+   components/subagent.css
+   ============================================ */
+.codian-subagent-list {
+  margin: 8px 0;
+}
+
+.codian-text-block+.codian-subagent-list {
+  margin-top: 8px;
+}
+
+.codian-subagent-list+.codian-text-block {
+  margin-top: 8px;
+}
+
+.codian-tool-call+.codian-subagent-list {
+  margin-top: 8px;
+}
+
+.codian-subagent-list+.codian-tool-call {
+  margin-top: 8px;
+}
+
+.codian-subagent-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.codian-subagent-icon {
+  display: flex;
+  align-items: center;
+  color: var(--interactive-accent);
+  flex-shrink: 0;
+}
+
+.codian-subagent-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.codian-subagent-label {
+  flex: 1;
+  font-family: var(--font-monospace);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-normal);
+}
+
+.codian-subagent-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.codian-subagent-status {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.codian-subagent-status svg {
+  width: 14px;
+  height: 14px;
+}
+
+.codian-subagent-status.status-running {
+  color: var(--text-accent);
+}
+
+.codian-subagent-status.status-completed {
+  color: var(--color-green);
+}
+
+.codian-subagent-status.status-error {
+  color: var(--color-red);
+}
+
+.codian-subagent-content {
+  padding: 4px 0;
+  padding-inline-start: 16px;
+  margin-inline-start: 7px;
+  border-inline-start: 2px solid var(--background-modifier-border);
+}
+
+.codian-subagent-section {
+  margin: 2px 0 6px;
+}
+
+.codian-subagent-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 2px 0;
+}
+
+.codian-subagent-section-header:hover {
+  color: var(--text-normal);
+}
+
+.codian-subagent-section-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.codian-subagent-section-body {
+  padding-inline-start: 6px;
+}
+
+.codian-subagent-prompt-text,
+.codian-subagent-result-output {
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.codian-subagent-result-output {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.codian-subagent-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.codian-subagent-tool-item {
+  display: block;
+}
+
+.codian-subagent-tool-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  overflow: hidden;
+  padding: 2px 0;
+}
+
+.codian-subagent-tool-header:hover {
+  opacity: 0.85;
+}
+
+.codian-subagent-tool-icon {
+  display: flex;
+  align-items: center;
+  color: var(--text-accent);
+  flex-shrink: 0;
+}
+
+.codian-subagent-tool-icon svg {
+  width: 13px;
+  height: 13px;
+}
+
+.codian-subagent-tool-name {
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  color: var(--text-normal);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.codian-subagent-tool-summary {
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.codian-subagent-tool-status {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.codian-subagent-tool-status svg {
+  width: 12px;
+  height: 12px;
+}
+
+.codian-subagent-tool-status.status-running {
+  color: var(--text-accent);
+}
+
+.codian-subagent-tool-status.status-completed {
+  color: var(--color-green);
+}
+
+.codian-subagent-tool-status.status-error,
+.codian-subagent-tool-status.status-blocked {
+  color: var(--color-red);
+}
+
+.codian-subagent-tool-content {
+  padding: 2px 0 2px 16px;
+}
+
+.codian-subagent-tool-empty {
+  color: var(--text-faint);
+  font-style: italic;
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  padding: 2px 0;
+}
+
+.codian-subagent-status-text {
+  font-size: 11px;
+  font-family: var(--font-monospace);
+  color: var(--text-muted);
+  margin-inline-start: auto;
+  padding-inline-start: 8px;
+}
+
+.codian-subagent-list.async .codian-subagent-icon {
+  color: var(--interactive-accent);
+}
+
+.codian-subagent-list.async.pending .codian-subagent-status-text {
+  color: var(--text-muted);
+}
+
+.codian-subagent-list.async.running .codian-subagent-status-text {
+  color: var(--text-accent);
+}
+
+.codian-subagent-list.async.awaiting .codian-subagent-status-text {
+  color: var(--color-yellow);
+}
+
+.codian-subagent-list.async.completed .codian-subagent-status-text {
+  color: var(--color-green);
+}
+
+.codian-subagent-list.async.error .codian-subagent-status-text {
+  color: var(--color-red);
+}
+
+.codian-subagent-list.async.orphaned .codian-subagent-status-text {
+  color: var(--color-orange);
+}
+
+
+/* ============================================
+   components/input.css
+   ============================================ */
+/* Input area */
+.codian-input-container {
+  position: relative;
+  padding: 12px 0 0 0;
+}
+
+/* Input wrapper (border container) - flex column so textarea expands when no chips */
+/* Height calculation: context row (36px) + textarea min (60px) + toolbar (38px) + border (2px) = 136px */
+.codian-input-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 140px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-primary);
+}
+
+/* Context row (file chip start, selection indicator end) - inside input wrapper at top */
+/* Collapsed by default; expanded via .has-content class; textarea fills remaining space */
+.codian-context-row {
+  display: none;
+  align-items: flex-start;
+  justify-content: flex-start;
+  flex-shrink: 0;
+  padding: 6px 10px 0 10px;
+  gap: 8px;
+}
+
+/* Show context row when it has visible content */
+.codian-context-row.has-content {
+  display: flex;
+}
+
+/* Nav row (tab badges start, header icons end) - above input wrapper */
+.codian-input-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0 8px 0;
+  min-height: 0;
+}
+
+/* Header mode: hide nav row above input (content moved to header) */
+.codian-container--header-mode .codian-input-nav-row {
+  display: none;
+}
+
+/* Selection indicator (shown when text is selected in editor) */
+/* Match file chip height (24px): chip has 16px remove button + 6px padding + 2px border */
+/* Indicator: 12px text + 10px padding (5+5) + 2px border = 24px */
+.codian-selection-indicator,
+.codian-browser-selection-indicator,
+.codian-canvas-indicator {
+  color: #7abaff;
+  font-size: 12px;
+  line-height: 1;
+  opacity: 0.9;
+  pointer-events: none;
+  white-space: nowrap;
+  padding: 5px 6px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  margin-inline-start: auto;
+  flex-shrink: 0;
+  order: 4;
+  max-width: min(100%, clamp(220px, 64vw, 560px));
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.codian-input {
+  width: 100%;
+  flex: 1 1 0;
+  min-height: 60px;
+  /* max-height dynamically set by JS: max(150px, 55% of view height) */
+  resize: none;
+  padding: 8px 10px 10px 10px;
+  border: none !important;
+  border-radius: 6px;
+  background: transparent !important;
+  color: var(--text-normal);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+  box-shadow: none !important;
+  overflow-y: auto;
+  unicode-bidi: plaintext; /* Proper BiDi text handling for mixed RTL/LTR */
+}
+
+.codian-input:hover,
+.codian-input:focus {
+  outline: none !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.codian-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Input toolbar */
+.codian-input-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-shrink: 0;
+  padding: 4px 6px 6px 6px;
+}
+
+/* File indicator (attached files) */
+.codian-file-indicator {
+  display: none;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.codian-file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px 3px 8px;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1;
+  max-width: 200px;
+  cursor: pointer;
+}
+
+.codian-file-chip-icon {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.codian-file-chip-icon svg {
+  width: 12px;
+  height: 12px;
+}
+
+.codian-file-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-normal);
+}
+
+.codian-file-chip-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.codian-file-chip-remove:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.codian-file-chip:hover {
+  background: var(--background-modifier-hover);
+}
+
+/* Message Queue Indicator (shown below flavor text in thinking indicator) */
+.codian-queue-indicator {
+  display: none;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: normal;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Light blue border when instruction mode is active */
+.codian-input-instruction-mode {
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 0 1px #60a5fa;
+}
+
+/* Pink border when bash mode is active */
+.codian-input-bang-bash-mode {
+  border-color: #f472b6 !important;
+  box-shadow: 0 0 0 1px #f472b6;
+}
+
+/* Monospace input while in bash mode */
+.codian-input-wrapper.codian-input-bang-bash-mode .codian-input {
+  font-family: var(--font-monospace);
+}
+
+
+/* ============================================
+   components/context-footer.css
+   ============================================ */
+/* Context usage meter (inline in toolbar) */
+
+.codian-context-meter {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-inline-start: 8px;
+  cursor: default;
+}
+
+/* Custom tooltip */
+.codian-context-meter::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 6px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--text-normal);
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.codian-context-meter:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+.codian-context-meter-gauge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.codian-context-meter-gauge svg {
+  width: 16px;
+  height: 16px;
+}
+
+.codian-meter-bg {
+  stroke: var(--background-modifier-border);
+}
+
+.codian-meter-fill {
+  stroke: var(--codian-brand);
+  transition: stroke-dashoffset 0.3s ease, stroke 0.3s ease;
+}
+
+.codian-context-meter-percent {
+  font-size: 11px;
+  color: var(--codian-brand);
+  min-width: 24px;
+  text-align: end;
+  transition: color 0.3s ease;
+}
+
+/* Warning state (> 80%) - pale red */
+.codian-context-meter.warning .codian-meter-fill {
+  stroke: #E57373;
+}
+
+.codian-context-meter.warning .codian-context-meter-percent {
+  color: #E57373;
+}
+
+
+/* ============================================
+   toolbar/model-selector.css
+   ============================================ */
+/* Model selector */
+.codian-model-selector {
+  position: relative;
+}
+
+.codian-model-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 12px;
+  transition: color 0.2s ease;
+}
+
+.codian-model-btn.ready {
+  color: var(--codian-brand);
+}
+
+.codian-model-label {
+  font-weight: 500;
+}
+
+.codian-model-chevron {
+  display: flex;
+  align-items: center;
+}
+
+.codian-model-chevron svg {
+  width: 12px;
+  height: 12px;
+}
+
+.codian-model-dropdown {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  width: max-content;
+  padding: 4px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+
+.codian-model-selector:hover .codian-model-dropdown {
+  opacity: 1;
+  visibility: visible;
+}
+
+.codian-model-option {
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-radius: 3px;
+  transition: background 0.1s ease, color 0.1s ease;
+  white-space: nowrap;
+}
+
+.codian-model-option:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.codian-model-option.selected {
+  background: rgba(var(--codian-brand-rgb), 0.15);
+  color: var(--codian-brand);
+  font-weight: 500;
+}
+
+
+/* ============================================
+   toolbar/thinking-selector.css
+   ============================================ */
+/* Thinking selector (effort for adaptive models, token budget for custom) */
+.codian-thinking-selector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Effort / budget container (shared layout) */
+.codian-thinking-effort,
+.codian-thinking-budget {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.codian-thinking-label-text {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.codian-thinking-gears {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+}
+
+/* Current selection (visible when collapsed) */
+.codian-thinking-current {
+  padding: 3px 8px;
+  font-size: 11px;
+  color: var(--codian-brand);
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 3px;
+  white-space: nowrap;
+  background: transparent;
+}
+
+/* Options container - expands vertically upward */
+.codian-thinking-options {
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 4px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+
+/* Expand on hover */
+.codian-thinking-gears:hover .codian-thinking-options {
+  opacity: 1;
+  visibility: visible;
+}
+
+.codian-thinking-gear {
+  padding: 3px 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.1s ease, color 0.1s ease;
+  white-space: nowrap;
+}
+
+.codian-thinking-gear:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.codian-thinking-gear.selected {
+  background: rgba(var(--codian-brand-rgb), 0.15);
+  color: var(--codian-brand);
+  font-weight: 500;
+}
+
+
+/* ============================================
+   toolbar/permission-toggle.css
+   ============================================ */
+/* Permission Mode Toggle */
+.codian-permission-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding-left: 12px;
+  padding-right: 8px;
+}
+
+.codian-permission-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  min-width: 28px;
+}
+
+.codian-permission-label.plan-active {
+  color: rgb(92, 148, 140);
+  font-weight: 600;
+}
+
+.codian-toggle-switch {
+  width: 32px;
+  height: 18px;
+  border-radius: 9px;
+  background: var(--background-modifier-border);
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.codian-toggle-switch::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  top: 2px;
+  left: 2px;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.codian-toggle-switch:hover {
+  background: var(--background-modifier-hover);
+}
+
+.codian-toggle-switch.active {
+  background: rgba(var(--codian-brand-rgb), 0.3);
+}
+
+.codian-toggle-switch.active::after {
+  transform: translateX(14px);
+  background: var(--codian-brand);
+}
+
+
+/* ============================================
+   toolbar/external-context.css
+   ============================================ */
+/* External Context Selector */
+.codian-external-context-selector {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+}
+
+.codian-external-context-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.codian-external-context-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--text-faint);
+  transition: color 0.15s ease;
+}
+
+.codian-external-context-icon-wrapper:hover .codian-external-context-icon {
+  color: var(--text-normal);
+}
+
+.codian-external-context-icon.active {
+  color: var(--codian-brand);
+  animation: external-context-glow 2s ease-in-out infinite;
+}
+
+.codian-external-context-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.codian-external-context-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--codian-brand);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.codian-external-context-badge.visible {
+  opacity: 1;
+}
+
+.codian-external-context-dropdown {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 100%;
+  margin-bottom: 4px;
+  min-width: 260px;
+  max-width: 320px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+  z-index: 100;
+}
+
+.codian-external-context-selector:hover .codian-external-context-dropdown {
+  opacity: 1;
+  visibility: visible;
+}
+
+.codian-external-context-header {
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.codian-external-context-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.codian-external-context-empty {
+  padding: 16px 12px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.codian-external-context-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 8px;
+  border-bottom: 1px solid var(--background-modifier-border-focus);
+}
+
+.codian-external-context-item:last-child {
+  border-bottom: none;
+}
+
+.codian-external-context-text {
+  flex: 1;
+  font-size: 12px;
+  font-family: var(--font-monospace);
+  color: var(--text-normal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.codian-external-context-lock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-muted);
+  opacity: 0.4;
+  transition: all 0.15s ease;
+}
+
+.codian-external-context-lock:hover {
+  background: var(--background-modifier-hover);
+  opacity: 0.8;
+}
+
+.codian-external-context-lock.locked {
+  color: var(--codian-brand);
+  opacity: 0.9;
+}
+
+.codian-external-context-lock.locked:hover {
+  opacity: 1;
+}
+
+.codian-external-context-lock svg {
+  width: 12px;
+  height: 12px;
+}
+
+.codian-external-context-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-muted);
+  opacity: 0.6;
+  transition: all 0.15s ease;
+}
+
+.codian-external-context-remove:hover {
+  background: rgba(var(--codian-error-rgb), 0.15);
+  color: var(--codian-error);
+  opacity: 1;
+}
+
+.codian-external-context-remove svg {
+  width: 14px;
+  height: 14px;
+}
+
+
+/* ============================================
+   toolbar/mcp-selector.css
+   ============================================ */
+/* MCP Server Selector */
+.codian-mcp-selector {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+}
+
+.codian-mcp-selector-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.codian-mcp-selector-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--text-faint);
+  transition: color 0.15s ease;
+}
+
+.codian-mcp-selector-icon-wrapper:hover .codian-mcp-selector-icon {
+  color: var(--text-normal);
+}
+
+.codian-mcp-selector-icon.active {
+  color: var(--codian-brand);
+  animation: mcp-glow 2s ease-in-out infinite;
+}
+
+.codian-mcp-selector-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.codian-mcp-selector-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--codian-brand);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.codian-mcp-selector-badge.visible {
+  opacity: 1;
+}
+
+.codian-mcp-selector-dropdown {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 100%;
+  margin-bottom: 4px;
+  min-width: 200px;
+  max-width: 280px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+  z-index: 100;
+}
+
+/* Bridge the gap between icon and dropdown to prevent hover breaks */
+.codian-mcp-selector-dropdown::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -8px;
+  height: 8px;
+}
+
+.codian-mcp-selector-dropdown.visible,
+.codian-mcp-selector:hover .codian-mcp-selector-dropdown {
+  opacity: 1;
+  visibility: visible;
+}
+
+.codian-mcp-selector-header {
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.codian-mcp-selector-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.codian-mcp-selector-empty {
+  padding: 16px 12px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.codian-mcp-selector-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.codian-mcp-selector-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.codian-mcp-selector-item.enabled {
+  background: rgba(var(--codian-brand-rgb), 0.1);
+}
+
+.codian-mcp-selector-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 3px;
+  color: var(--codian-brand);
+}
+
+.codian-mcp-selector-item.enabled .codian-mcp-selector-check {
+  background: rgba(var(--codian-brand-rgb), 0.2);
+  border-color: var(--codian-brand);
+}
+
+.codian-mcp-selector-check svg {
+  width: 12px;
+  height: 12px;
+}
+
+.codian-mcp-selector-item-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.codian-mcp-selector-item-name {
+  font-size: 12px;
+  color: var(--text-normal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.codian-mcp-selector-cs-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(var(--codian-brand-rgb), 0.2);
+  color: var(--codian-brand);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+
+/* ============================================
+   features/file-context.css
+   ============================================ */
+/* @ Mention dropdown */
+.codian-mention-dropdown {
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  margin-bottom: 4px;
+  background: var(--background-secondary);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.codian-mention-dropdown.visible {
+  display: block;
+}
+
+/* Fixed positioning for inline editor */
+.codian-mention-dropdown-fixed {
+  position: fixed;
+  z-index: 10001;
+}
+
+.codian-mention-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.codian-mention-item:hover,
+.codian-mention-item.selected {
+  background: var(--background-modifier-hover);
+}
+
+.codian-mention-icon {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.codian-mention-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.codian-mention-path {
+  font-size: 13px;
+  color: var(--text-normal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.codian-mention-empty {
+  padding: 12px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* Scrollbar for mention dropdown */
+.codian-mention-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.codian-mention-dropdown::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.codian-mention-dropdown::-webkit-scrollbar-thumb {
+  background: var(--background-modifier-border);
+  border-radius: 3px;
+}
+
+/* MCP items in @-mention dropdown */
+.codian-mention-item.mcp-server .codian-mention-icon {
+  color: var(--interactive-accent);
+}
+
+.codian-mention-item.vault-folder .codian-mention-icon {
+  color: var(--text-muted);
+}
+
+.codian-mention-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.codian-mention-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--interactive-accent);
+}
+
+.codian-mention-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Context file items in @-mention dropdown */
+.codian-mention-item.context-file .codian-mention-icon {
+  color: var(--codian-brand);
+}
+
+.codian-mention-item.context-file .codian-mention-text {
+  flex-direction: row;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.codian-mention-item.context-file .codian-mention-name-context {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Context folder filter items in @-mention dropdown */
+.codian-mention-item.context-folder .codian-mention-icon {
+  color: var(--text-muted);
+}
+
+.codian-mention-name-folder {
+  color: var(--text-normal);
+  font-weight: 500;
+}
+
+.codian-mention-name-context {
+  color: var(--text-normal);
+}
+
+/* Agent folder items in @-mention dropdown */
+.codian-mention-item.agent-folder .codian-mention-icon {
+  color: var(--link-color);
+}
+
+.codian-mention-name-agent-folder {
+  color: var(--link-color);
+  font-weight: 600;
+}
+
+/* Agent items in @-mention dropdown (inside @Agents/) */
+.codian-mention-item.agent .codian-mention-icon {
+  color: var(--link-color);
+}
+
+.codian-mention-item.agent .codian-mention-text {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 6px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.codian-mention-item.agent .codian-mention-name-agent {
+  color: var(--text-normal);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.codian-mention-item.agent .codian-mention-agent-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+
+/* ============================================
+   features/file-link.css
+   ============================================ */
+/* Clickable file links that open files in Obsidian */
+.codian-file-link {
+  color: var(--text-accent);
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: color 0.15s ease;
+}
+
+.codian-file-link:hover {
+  color: var(--text-accent-hover);
+  text-decoration: underline;
+}
+
+/* File link inside inline code */
+code .codian-file-link {
+  color: var(--text-accent);
+}
+
+code .codian-file-link:hover {
+  color: var(--text-accent-hover);
+}
+
+
+/* ============================================
+   features/image-context.css
+   ============================================ */
+/* Image Context - Preview & Attachments */
+
+/* Image preview container (in input area) */
+.codian-image-preview {
+  display: none;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0;
+  margin-bottom: 4px;
+}
+
+/* Individual image preview chip */
+.codian-image-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  max-width: 200px;
+}
+
+.codian-image-chip:hover {
+  border-color: var(--interactive-accent);
+}
+
+/* Image thumbnail */
+.codian-image-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.codian-image-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Image info */
+.codian-image-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.codian-image-name {
+  font-size: 12px;
+  color: var(--text-normal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.codian-image-size {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* Remove button */
+.codian-image-remove {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+  font-size: 0; /* Hide text character */
+}
+
+.codian-image-remove::before,
+.codian-image-remove::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 2px;
+  background: var(--text-muted);
+  border-radius: 1px;
+  transition: background 0.15s ease;
+}
+
+.codian-image-remove::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.codian-image-remove::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.codian-image-remove:hover {
+  background: var(--background-modifier-error);
+}
+
+.codian-image-remove:hover::before,
+.codian-image-remove:hover::after {
+  background: var(--text-on-accent);
+}
+
+/* Drop overlay - inside input wrapper */
+.codian-drop-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(var(--codian-brand-rgb), 0.08);
+  border: 2px dashed var(--codian-brand);
+  border-radius: 6px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.codian-drop-overlay.visible {
+  display: flex;
+}
+
+.codian-drop-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--codian-brand);
+}
+
+.codian-drop-content svg {
+  opacity: 0.7;
+}
+
+.codian-drop-content span {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Images in Messages (displayed above user bubble) */
+
+/* Images container - right-aligned above user message */
+.codian-message-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+  margin-bottom: 6px;
+  padding-right: 4px;
+}
+
+/* Individual image in message - standardized size */
+.codian-message-image {
+  width: 120px;
+  height: 120px;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+}
+
+.codian-message-image:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.codian-message-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+
+/* ============================================
+   features/image-embed.css
+   ============================================ */
+/* Image embed styles - displays ![[image.png]] wikilinks as actual images */
+
+.codian-embedded-image {
+  display: inline-block;
+  max-width: 100%;
+  margin: 0.5em 0;
+  vertical-align: middle;
+}
+
+.codian-embedded-image img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-s);
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.codian-embedded-image img:hover {
+  opacity: 0.9;
+}
+
+/* When image is inline with text */
+.codian-text-block p .codian-embedded-image {
+  margin: 0.25em 0;
+}
+
+/* Block-level image (standalone on its own line) */
+.codian-text-block p > .codian-embedded-image:only-child {
+  display: block;
+  margin: 0.75em 0;
+}
+
+/* Fallback when image file not found */
+.codian-embedded-image-fallback {
+  color: var(--text-muted);
+  font-style: italic;
+  background: var(--background-modifier-hover);
+  padding: 0.1em 0.4em;
+  border-radius: var(--radius-s);
+}
+
+
+/* ============================================
+   features/image-modal.css
+   ============================================ */
+/* Full-size Image Modal */
+.codian-image-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  cursor: pointer;
+}
+
+.codian-image-modal {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  cursor: default;
+}
+
+.codian-image-modal img {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.codian-image-modal-close {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--background-secondary);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 20px;
+  color: var(--text-muted);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.codian-image-modal-close:hover {
+  background: var(--background-modifier-error);
+  color: var(--text-on-accent);
+}
+
+
+/* ============================================
+   features/inline-edit.css
+   ============================================ */
+/* Inline Edit (CM6 decorations) */
+
+/* Selection highlight (shared by inline edit and chat) */
+.cm-line .codian-selection-highlight,
+.codian-selection-highlight {
+  background: var(--text-selection) !important;
+  border-radius: 2px;
+  padding: 3px 0;
+  margin: -3px 0;
+}
+
+/* Preview mode selection highlight via CSS Custom Highlight API */
+::highlight(codian-selection) {
+  background: var(--text-selection);
+}
+
+/* CM6 widget container - ensure transparent background */
+.cm-widgetBuffer,
+.cm-line:has(.codian-inline-input-container) {
+  background: transparent !important;
+}
+
+/* Input container - fully transparent */
+.codian-inline-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 2px 0;
+  background: transparent !important;
+}
+
+/* Input wrapper - contains input and spinner */
+.codian-inline-input-wrap {
+  flex: 1;
+  position: relative;
+  background: transparent !important;
+  overflow: visible;
+}
+
+/* Input - fully transparent */
+.codian-inline-input {
+  width: 100%;
+  padding: 4px 8px;
+  padding-inline-end: 30px;
+  border-width: 1px !important;
+  border-style: solid !important;
+  border-color: var(--background-modifier-border) !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: var(--text-normal);
+  font-family: var(--font-interface, -apple-system, BlinkMacSystemFont, sans-serif) !important;
+  font-size: var(--font-ui-small, 13px) !important;
+}
+
+.codian-inline-input:focus,
+.codian-inline-input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.codian-inline-input::placeholder {
+  color: var(--text-faint);
+}
+
+.codian-inline-input:disabled {
+  opacity: 0.6;
+}
+
+/* Spinner - inside input box on end side */
+.codian-inline-spinner {
+  position: absolute;
+  inset-inline-end: 8px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin-top: -7px;
+  border: 2px solid var(--background-modifier-border);
+  border-top-color: var(--codian-brand);
+  border-radius: 50%;
+  box-sizing: border-box;
+  animation: codian-spin 0.8s linear infinite;
+}
+
+/* Agent reply - shown when agent asks clarifying question */
+.codian-inline-agent-reply {
+  padding: 8px;
+  margin-bottom: 4px;
+  background: transparent;
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--background-modifier-border);
+  border-radius: 8px;
+  font-family: var(--font-interface, -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: var(--font-ui-small, 13px);
+  line-height: 1.4;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Inline Diff - replaces selection in place */
+.codian-inline-diff-replace {
+  /* Inherit all font properties from document */
+  font-size: inherit;
+  font-family: inherit;
+  line-height: inherit;
+  font-weight: inherit;
+}
+
+/* Deleted text - red strikethrough */
+.codian-diff-del {
+  background: rgba(255, 80, 80, 0.2);
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+/* Inserted text - green background */
+.codian-diff-ins {
+  background: rgba(80, 200, 80, 0.2);
+}
+
+/* Accept/Reject buttons inline with diff */
+.codian-inline-diff-buttons {
+  display: inline-flex;
+  gap: 8px;
+  margin-inline-start: 6px;
+  background: none !important;
+}
+
+.codian-inline-diff-btn {
+  padding: 4px 6px;
+  border: none !important;
+  background: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.codian-inline-diff-btn.reject {
+  color: var(--color-red);
+}
+
+.codian-inline-diff-btn.accept {
+  color: var(--color-green);
+}
+
+
+/* ============================================
+   features/diff.css
+   ============================================ */
+/* Write/Edit Diff Block - Subagent style */
+.codian-write-edit-block {
+  margin: 4px 0;
+  background: transparent;
+  overflow: hidden;
+}
+
+.codian-text-block+.codian-write-edit-block {
+  margin-top: 8px;
+}
+
+.codian-write-edit-block+.codian-text-block {
+  margin-top: 8px;
+}
+
+.codian-write-edit-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  cursor: pointer;
+  user-select: none;
+  background: transparent;
+  overflow: hidden;
+}
+
+.codian-write-edit-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--text-accent);
+  flex-shrink: 0;
+}
+
+.codian-write-edit-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Two-part header: name (fixed) + summary (flexible) */
+.codian-write-edit-name {
+  font-family: var(--font-monospace);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-normal);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.codian-write-edit-summary {
+  font-family: var(--font-monospace);
+  font-size: 13px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.codian-write-edit-stats {
+  font-family: var(--font-monospace);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.codian-write-edit-stats .added {
+  color: var(--color-green);
+}
+
+.codian-write-edit-stats .removed {
+  color: var(--color-red);
+  margin-left: 4px;
+}
+
+.codian-write-edit-status {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* Hide empty status on successful completion so stats align to right edge */
+.codian-write-edit-block.done .codian-write-edit-status:empty {
+  display: none;
+}
+
+.codian-write-edit-status svg {
+  width: 16px;
+  height: 16px;
+}
+
+.codian-write-edit-status.status-completed {
+  color: var(--color-green);
+}
+
+.codian-write-edit-status.status-error,
+.codian-write-edit-status.status-blocked {
+  color: var(--color-red);
+}
+
+.codian-write-edit-content {
+  padding: 0;
+  background: transparent;
+  overflow: hidden;
+}
+
+.codian-write-edit-diff-row {
+  display: flex;
+}
+
+.codian-write-edit-diff {
+  flex: 1;
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  line-height: 1.5;
+  background: transparent;
+  max-height: 300px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.codian-write-edit-loading,
+.codian-write-edit-binary,
+.codian-write-edit-error,
+.codian-write-edit-done-text {
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.codian-write-edit-error {
+  color: var(--color-red);
+}
+
+/* Diff line styling */
+.codian-diff-hunk {
+  margin-bottom: 4px;
+}
+
+.codian-diff-line {
+  display: flex;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.codian-diff-prefix {
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.codian-diff-text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Diff colors - NO strikethrough for Write/Edit blocks */
+.codian-diff-equal {
+  color: var(--text-muted);
+}
+
+.codian-diff-delete {
+  background: rgba(255, 80, 80, 0.25);
+  color: var(--text-normal);
+}
+
+.codian-diff-delete .codian-diff-prefix {
+  color: var(--color-red);
+}
+
+.codian-diff-insert {
+  background: rgba(80, 200, 80, 0.25);
+  color: var(--text-normal);
+}
+
+.codian-diff-insert .codian-diff-prefix {
+  color: var(--color-green);
+}
+
+/* Hunk separator */
+.codian-diff-separator {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 4px 0;
+  font-style: italic;
+  border-top: 1px dashed var(--background-modifier-border);
+  border-bottom: 1px dashed var(--background-modifier-border);
+  margin: 8px 0;
+  font-size: 11px;
+}
+
+.codian-diff-no-changes {
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 8px;
+}
+
+
+/* ============================================
+   features/slash-commands.css
+   ============================================ */
+/* Slash Command Dropdown */
+.codian-slash-dropdown {
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  margin-bottom: 4px;
+  background: var(--background-secondary);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.codian-slash-dropdown.visible {
+  display: block;
+}
+
+/* Fixed positioning for inline editor */
+.codian-slash-dropdown-fixed {
+  position: fixed;
+  z-index: 10001;
+}
+
+.codian-slash-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.1s ease;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.codian-slash-item:last-child {
+  border-bottom: none;
+}
+
+.codian-slash-item:hover,
+.codian-slash-item.selected {
+  background: var(--background-modifier-hover);
+}
+
+.codian-slash-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-normal);
+  font-family: var(--font-monospace);
+}
+
+.codian-slash-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-left: 8px;
+}
+
+.codian-slash-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.codian-slash-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* Scrollbar */
+.codian-slash-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.codian-slash-dropdown::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.codian-slash-dropdown::-webkit-scrollbar-thumb {
+  background: var(--background-modifier-border);
+  border-radius: 3px;
+}
+
+
+/* ============================================
+   features/resume-session.css
+   ============================================ */
+/* Resume Session Dropdown */
+.codian-resume-dropdown {
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  margin-bottom: 4px;
+  background: var(--background-secondary);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  max-height: 400px;
+  overflow: hidden;
+}
+
+.codian-resume-dropdown.visible {
+  display: block;
+}
+
+.codian-resume-header {
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.codian-resume-list {
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.codian-resume-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.codian-resume-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--background-modifier-border);
+  transition: background 0.1s ease;
+}
+
+.codian-resume-item:last-child {
+  border-bottom: none;
+}
+
+.codian-resume-item:hover,
+.codian-resume-item.selected {
+  background: var(--background-modifier-hover);
+}
+
+.codian-resume-item.current {
+  background: var(--background-secondary);
+  border-inline-start: 2px solid var(--interactive-accent);
+  padding-inline-start: 10px;
+}
+
+.codian-resume-item-icon {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.codian-resume-item-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.codian-resume-item.current .codian-resume-item-icon {
+  color: var(--interactive-accent);
+}
+
+.codian-resume-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.codian-resume-item-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-normal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.codian-resume-item-date {
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+
+/* Scrollbar */
+.codian-resume-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.codian-resume-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.codian-resume-list::-webkit-scrollbar-thumb {
+  background: var(--background-modifier-border);
+  border-radius: 3px;
+}
+
+
+/* ============================================
+   features/ask-user-question.css
+   ============================================ */
+/* AskUserQuestion - inline widget rendered in chat panel */
+
+.codian-ask-question-inline {
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  outline: none;
+}
+
+.codian-ask-inline-title {
+  font-weight: 700;
+  color: var(--text-muted);
+  padding: 6px 10px 0;
+}
+
+/* ── Tab bar ─────────────────────────────────── */
+
+.codian-ask-tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  line-height: 1.4;
+}
+
+.codian-ask-tab {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--text-muted);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.codian-ask-tab:hover {
+  color: var(--text-normal);
+}
+
+.codian-ask-tab.is-active {
+  background: hsla(55, 30%, 50%, 0.18);
+  color: var(--text-normal);
+}
+
+.codian-ask-tab-label {
+  font-weight: 600;
+  max-width: 14ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.codian-ask-tab-tick {
+  color: var(--color-green);
+  font-weight: 700;
+}
+
+.codian-ask-tab-submit-check {
+  color: var(--color-green);
+  white-space: pre;
+}
+
+/* ── Content area ────────────────────────────── */
+
+.codian-ask-content {
+  padding: 8px 10px;
+}
+
+.codian-ask-question-text {
+  font-weight: 700;
+  color: var(--text-normal);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+/* ── Item list ───────────────────────────────── */
+
+.codian-ask-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+.codian-ask-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 3px 4px;
+  cursor: pointer;
+  line-height: 1.4;
+  color: var(--text-normal);
+  border-radius: 3px;
+}
+
+.codian-ask-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.codian-ask-cursor {
+  display: inline-block;
+  width: 2ch;
+  flex-shrink: 0;
+  color: var(--text-accent);
+  font-weight: 700;
+}
+
+.codian-ask-item-num {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.codian-ask-item-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.codian-ask-label-row {
+  display: flex;
+  align-items: baseline;
+}
+
+.codian-ask-item-label {
+  font-weight: 600;
+}
+
+.codian-ask-item-desc {
+  color: var(--text-muted);
+  font-weight: 400;
+  line-height: 1.4;
+  margin-top: 1px;
+}
+
+/* Selected items: green text */
+.codian-ask-item.is-selected .codian-ask-item-label {
+  color: var(--color-green);
+}
+
+/* Disabled items: muted text */
+.codian-ask-item.is-disabled .codian-ask-item-label {
+  color: var(--text-faint);
+}
+
+/* ── Multi-select brackets ───────────────────── */
+
+.codian-ask-check {
+  color: var(--text-faint);
+  flex-shrink: 0;
+  white-space: pre;
+}
+
+.codian-ask-check.is-checked {
+  color: var(--color-green);
+}
+
+/* ── Single-select check mark ────────────────── */
+
+.codian-ask-check-mark {
+  color: var(--color-green);
+  font-weight: 700;
+}
+
+/* ── Custom input ────────────────────────────── */
+
+.codian-ask-item input.codian-ask-custom-text,
+.codian-ask-item input.codian-ask-custom-text:hover,
+.codian-ask-item input.codian-ask-custom-text:focus {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-family: var(--font-monospace);
+  font-size: inherit;
+  color: var(--text-normal);
+  outline: none;
+  padding: 0;
+  width: 0;
+  height: auto;
+  min-height: 0;
+  line-height: 1.4;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.codian-ask-custom-text::placeholder {
+  color: var(--text-faint);
+}
+
+/* ── Submit review tab ───────────────────────── */
+
+.codian-ask-review-title {
+  font-weight: 700;
+  color: var(--text-normal);
+  margin-bottom: 6px;
+}
+
+.codian-ask-review {
+  font-family: var(--font-monospace);
+  margin-bottom: 16px;
+}
+
+.codian-tool-content .codian-ask-review {
+  font-size: 12px;
+}
+
+.codian-ask-review:last-child {
+  margin-bottom: 0;
+}
+
+.codian-ask-review-pair {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.codian-ask-review-pair:last-child {
+  margin-bottom: 0;
+}
+
+.codian-ask-review-num {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.codian-ask-review-body {
+  min-width: 0;
+}
+
+.codian-ask-review-q-text {
+  color: var(--text-muted);
+}
+
+.codian-ask-review-a-text {
+  color: var(--text-normal);
+}
+
+.codian-ask-review-empty {
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+.codian-ask-review-prompt {
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+/* ── Hints ───────────────────────────────────── */
+
+.codian-ask-hints {
+  color: var(--text-faint);
+  padding-top: 6px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+/* ── Approval header (inline permission request) ── */
+
+.codian-ask-approval-info {
+  padding: 8px 10px;
+}
+
+.codian-ask-approval-tool {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.codian-ask-approval-icon {
+  color: var(--codian-brand);
+}
+
+.codian-ask-approval-tool-name {
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.codian-ask-approval-reason {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.codian-ask-approval-blocked-path {
+  font-family: var(--font-monospace);
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 3px 6px;
+  background: var(--background-primary-alt);
+  border-radius: 4px;
+  margin-bottom: 6px;
+  word-break: break-all;
+}
+
+.codian-ask-approval-agent {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.codian-ask-approval-desc {
+  padding: 8px 10px;
+  background: var(--background-primary-alt);
+  border-radius: 6px;
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  color: var(--text-normal);
+  word-break: break-all;
+}
+
+
+/* ============================================
+   features/plan-mode.css
+   ============================================ */
+/* Plan Mode - inline cards for EnterPlanMode / ExitPlanMode */
+
+.codian-plan-approval-inline {
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  outline: none;
+}
+
+.codian-plan-inline-title {
+  font-weight: 700;
+  color: var(--text-muted);
+  padding: 6px 10px 0;
+}
+
+/* ── Plan content preview ────────────────────────── */
+
+.codian-plan-content-preview {
+  max-height: 300px;
+  overflow-y: auto;
+  margin: 6px 10px 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-normal);
+}
+
+.codian-plan-content-preview::-webkit-scrollbar {
+  width: 4px;
+}
+
+.codian-plan-content-preview::-webkit-scrollbar-thumb {
+  background: var(--background-modifier-border);
+  border-radius: 2px;
+}
+
+.codian-plan-content-preview p {
+  margin: 0 0 6px;
+}
+
+.codian-plan-content-preview p:last-child {
+  margin-bottom: 0;
+}
+
+.codian-plan-content-preview h1,
+.codian-plan-content-preview h2,
+.codian-plan-content-preview h3,
+.codian-plan-content-preview h4 {
+  margin: 8px 0 4px;
+  font-size: 13px;
+}
+
+.codian-plan-content-preview ul,
+.codian-plan-content-preview ol {
+  margin: 2px 0 6px;
+  padding-left: 18px;
+}
+
+.codian-plan-content-preview li {
+  margin: 0;
+}
+
+.codian-plan-content-preview code {
+  font-size: 11px;
+}
+
+.codian-plan-content-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--font-monospace);
+}
+
+/* ── Permissions list ──────────────────────────── */
+
+.codian-plan-permissions {
+  padding: 4px 10px 8px;
+}
+
+.codian-plan-permissions-label {
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.codian-plan-permissions-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-normal);
+  line-height: 1.5;
+}
+
+.codian-plan-permissions-list li {
+  margin: 0;
+}
+
+/* ── Plan mode input border ──────────────────────── */
+
+.codian-input-wrapper.codian-input-plan-mode {
+  border-color: rgb(92, 148, 140) !important;
+  box-shadow: 0 0 0 1px rgb(92, 148, 140);
+}
+
+
+/* ============================================
+   modals/instruction.css
+   ============================================ */
+/* Instruction Mode */
+
+/* Instruction Confirm Modal */
+.codian-instruction-modal {
+  max-width: 500px;
+}
+
+.codian-instruction-section {
+  margin-bottom: 16px;
+}
+
+.codian-instruction-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.codian-instruction-original {
+  padding: 10px 12px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+  white-space: pre-wrap;
+}
+
+.codian-instruction-refined {
+  padding: 12px;
+  background: var(--background-primary-alt);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--text-normal);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.codian-instruction-clarification {
+  padding: 12px;
+  background: var(--background-primary-alt);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--text-normal);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.codian-instruction-edit-container {
+  margin-top: 6px;
+}
+
+.codian-instruction-edit-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  resize: vertical;
+  min-height: 80px;
+}
+
+.codian-instruction-edit-textarea:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+}
+
+.codian-instruction-response-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  resize: vertical;
+  min-height: 60px;
+}
+
+.codian-instruction-response-textarea:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+}
+
+.codian-instruction-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.codian-instruction-btn {
+  padding: 8px 16px;
+  font-size: 13px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.codian-instruction-reject-btn {
+  background: var(--background-modifier-border);
+  color: var(--text-normal);
+}
+
+.codian-instruction-reject-btn:hover {
+  background: var(--background-modifier-border-hover);
+}
+
+.codian-instruction-edit-btn {
+  background: var(--background-modifier-border);
+  color: var(--text-normal);
+}
+
+.codian-instruction-edit-btn:hover {
+  background: var(--background-modifier-border-hover);
+}
+
+.codian-instruction-accept-btn {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.codian-instruction-accept-btn:hover {
+  opacity: 0.9;
+}
+
+/* Instruction loading state */
+.codian-instruction-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  color: var(--text-muted);
+}
+
+.codian-instruction-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--background-modifier-border);
+  border-top-color: var(--interactive-accent);
+  border-radius: 50%;
+  animation: codian-spin 0.8s linear infinite;
+}
+
+/* Instruction modal content sections */
+.codian-instruction-content-section {
+  margin: 8px 0;
+}
+
+.codian-instruction-clarification-section,
+.codian-instruction-confirmation-section {
+  margin-top: 8px;
+}
+
+
+/* ============================================
+   modals/mcp-modal.css
+   ============================================ */
+/* MCP Server Modal */
+.codian-mcp-modal .modal-content {
+  width: 480px;
+  max-width: 90vw;
+}
+
+.codian-mcp-type-fields {
+  margin: 12px 0;
+  padding: 12px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+}
+
+.codian-mcp-type-fields .setting-item {
+  padding: 8px 0;
+  border-top: none;
+}
+
+.codian-mcp-type-fields .setting-item:first-child {
+  padding-top: 0;
+}
+
+.codian-mcp-cmd-setting,
+.codian-mcp-env-setting {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.codian-mcp-cmd-setting .setting-item-control,
+.codian-mcp-env-setting .setting-item-control {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.codian-mcp-cmd-textarea,
+.codian-mcp-env-textarea {
+  width: 100%;
+  min-height: 50px;
+  resize: vertical;
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+}
+
+.codian-mcp-cmd-textarea:focus,
+.codian-mcp-env-textarea:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+}
+
+.codian-mcp-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* MCP Test Modal */
+.codian-mcp-test-modal {
+  width: 500px;
+  max-width: 90vw;
+}
+
+.codian-mcp-test-modal .modal-content {
+  padding: 0 20px 20px 20px;
+}
+
+.codian-mcp-test-modal .modal-title {
+  padding: 20px 20px 12px 20px;
+  margin: 0 -20px;
+}
+
+.codian-mcp-test-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px;
+  color: var(--text-muted);
+}
+
+.codian-mcp-test-spinner {
+  width: 20px;
+  height: 20px;
+  animation: codian-spin 1s linear infinite;
+}
+
+.codian-mcp-test-spinner svg {
+  width: 100%;
+  height: 100%;
+}
+
+.codian-mcp-test-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.codian-mcp-test-icon {
+  display: flex;
+  align-items: center;
+}
+
+.codian-mcp-test-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.codian-mcp-test-icon.success {
+  color: var(--color-green);
+}
+
+.codian-mcp-test-icon.error {
+  color: var(--text-error);
+}
+
+.codian-mcp-test-text {
+  font-weight: 500;
+}
+
+.codian-mcp-test-error {
+  padding: 10px 12px;
+  background: rgba(var(--color-red-rgb), 0.1);
+  border: 1px solid var(--text-error);
+  border-radius: 6px;
+  color: var(--text-error);
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+.codian-mcp-test-tools {
+  margin-bottom: 16px;
+}
+
+.codian-mcp-test-tools-header {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: var(--text-muted);
+}
+
+.codian-mcp-test-tools-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.codian-mcp-test-tool {
+  padding: 10px 12px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+}
+
+.codian-mcp-test-tool-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.codian-mcp-test-tool-icon {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+}
+
+.codian-mcp-test-tool-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.codian-mcp-test-tool-name {
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.codian-mcp-test-tool-toggle {
+  margin-left: auto;
+}
+
+.codian-mcp-test-tool-toggle .checkbox-container {
+  display: flex;
+  align-items: center;
+}
+
+.codian-mcp-test-tool-disabled {
+  opacity: 0.75;
+}
+
+.codian-mcp-test-tool-disabled .codian-mcp-test-tool-name {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.codian-mcp-toggle-all-btn {
+  margin-right: 8px;
+}
+
+.codian-mcp-toggle-all-btn.is-destructive {
+  background: rgba(var(--color-red-rgb), 0.1);
+  border-color: rgba(var(--color-red-rgb), 0.3);
+  color: var(--text-error);
+}
+
+.codian-mcp-toggle-all-btn.is-destructive:hover {
+  background: rgba(var(--color-red-rgb), 0.2);
+}
+
+.codian-mcp-test-tool-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.codian-mcp-test-no-tools {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.codian-mcp-test-buttons {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+
+/* ============================================
+   modals/fork-target.css
+   ============================================ */
+/* Fork Target Modal */
+.codian-fork-target-modal {
+  max-width: 340px;
+}
+
+.codian-fork-target-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.codian-fork-target-option {
+  padding: 10px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-normal);
+  font-size: 14px;
+}
+
+.codian-fork-target-option:hover {
+  background: var(--background-modifier-hover);
+}
+
+
+/* ============================================
+   settings/base.css
+   ============================================ */
+/* Settings page - remove separator lines from setting items */
+.codian-settings .setting-item {
+  border-top: none;
+}
+
+/* Settings section headings (via setHeading()) */
+.codian-settings .setting-item-heading {
+  padding-top: 18px;
+  margin-top: 12px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.codian-settings .setting-item-heading:first-child {
+  padding-top: 0;
+  margin-top: 0;
+  border-top: none;
+}
+
+.codian-settings .setting-item-heading .setting-item-name {
+  font-size: var(--font-ui-medium);
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
+}
+
+/* Custom section descriptions - align with items */
+.codian-sp-settings-desc,
+.codian-mcp-settings-desc,
+.codian-plugin-settings-desc,
+.codian-approved-desc {
+  padding: 0 12px;
+}
+
+/* Unified icon action buttons for settings */
+.codian-settings-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.codian-settings-action-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.codian-settings-action-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.codian-settings-delete-btn:hover {
+  color: var(--text-error);
+}
+
+/* Hotkey grid - 3 columns */
+.codian-hotkey-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px 12px;
+  padding: 4px 0;
+}
+
+.codian-hotkey-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.codian-hotkey-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.codian-hotkey-name {
+  flex: 1;
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+}
+
+.codian-hotkey-badge {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  background: var(--background-modifier-hover);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-monospace);
+}
+
+/* Media folder input width */
+.codian-settings-media-input {
+  width: 200px;
+}
+
+/* ── Shared settings panel layout (used by slash-settings + agent-settings) ── */
+
+.codian-sp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 0 12px;
+}
+
+.codian-sp-label {
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+  font-weight: var(--font-medium);
+}
+
+.codian-sp-header-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.codian-sp-empty-state {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-muted);
+  background: var(--background-secondary);
+  border-radius: 6px;
+  margin-top: 8px;
+}
+
+.codian-sp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.codian-sp-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 12px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+}
+
+.codian-sp-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.codian-sp-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.codian-sp-item-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.codian-sp-item-name {
+  font-weight: 600;
+  font-family: var(--font-monospace);
+  color: var(--text-normal);
+}
+
+.codian-sp-item-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.codian-sp-item-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: 16px;
+  flex-shrink: 0;
+}
+
+.codian-sp-advanced-section {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 0 12px;
+  margin: 8px 0;
+}
+
+.codian-sp-advanced-summary {
+  cursor: pointer;
+  padding: 8px 0;
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+  font-weight: var(--font-medium);
+}
+
+.codian-sp-advanced-section[open] .codian-sp-advanced-summary {
+  margin-bottom: 4px;
+}
+
+.codian-sp-modal .modal-content {
+  max-width: 600px;
+  width: auto;
+}
+
+.codian-sp-content-area {
+  width: 100%;
+  font-family: var(--font-monospace);
+  font-size: 13px;
+  padding: 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  resize: vertical;
+  margin-top: 8px;
+}
+
+.codian-sp-content-area:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+}
+
+.codian-sp-modal-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+
+
+/* ============================================
+   settings/env-snippets.css
+   ============================================ */
+/* Context Limits Styles */
+.codian-context-limits-container {
+  margin-top: 16px;
+}
+
+.codian-context-limits-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  margin-top: 16px;
+  padding: 0 12px;
+}
+
+.codian-context-limits-label {
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+  font-weight: var(--font-medium);
+}
+
+.codian-context-limits-desc {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  padding: 0 12px;
+  margin-bottom: 8px;
+}
+
+.codian-context-limits-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.codian-context-limits-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.codian-context-limits-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.codian-context-limits-model {
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-small);
+  color: var(--text-normal);
+  flex: 1;
+  min-width: 0;
+  word-break: break-all;
+}
+
+.codian-context-limits-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-left: 16px;
+  flex-shrink: 0;
+}
+
+.codian-context-limits-input {
+  width: 80px;
+  padding: 4px 8px;
+  font-size: var(--font-ui-small);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+}
+
+.codian-context-limits-input:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+}
+
+.codian-context-limits-input.codian-input-error {
+  border-color: var(--text-error);
+}
+
+.codian-context-limit-validation {
+  display: none;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-error);
+  margin-top: 4px;
+}
+
+/* Environment Snippets Styles */
+.codian-env-snippets-container {
+  margin-top: 16px;
+}
+
+.codian-snippet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  margin-top: 16px;
+  padding: 0 12px;
+}
+
+.codian-snippet-label {
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+  font-weight: var(--font-medium);
+}
+
+.codian-save-env-btn {
+  padding: 6px 16px;
+  font-size: 13px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.codian-save-env-btn:hover {
+  opacity: 0.9;
+}
+
+.codian-snippet-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-muted);
+  background: var(--background-secondary);
+  border-radius: 6px;
+  margin-top: 8px;
+}
+
+.codian-snippet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.codian-snippet-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.codian-snippet-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.codian-snippet-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.codian-snippet-name {
+  font-weight: 600;
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+
+.codian-snippet-description {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.codian-snippet-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: 16px;
+  flex-shrink: 0;
+}
+
+.codian-restore-snippet-btn {
+  padding: 4px 12px;
+  font-size: 12px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.codian-restore-snippet-btn:hover {
+  opacity: 0.9;
+}
+
+.codian-edit-snippet-btn {
+  padding: 4px 12px;
+  font-size: 12px;
+  background: var(--background-modifier-border);
+  color: var(--text-normal);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.codian-edit-snippet-btn:hover {
+  background: var(--background-modifier-border-hover);
+}
+
+.codian-delete-snippet-btn {
+  padding: 4px 12px;
+  font-size: 12px;
+  background: var(--background-modifier-error);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.codian-delete-snippet-btn:hover {
+  opacity: 0.9;
+}
+
+/* Env Snippet Modal */
+.codian-env-snippet-modal .modal-content {
+  max-width: 550px;
+  width: 550px;
+  padding: 16px;
+}
+
+.codian-env-snippet-modal h2 {
+  margin: 0 0 16px 0;
+}
+
+.codian-env-snippet-modal .setting-item {
+  padding: 8px 0;
+  margin: 0;
+}
+
+.codian-env-snippet-modal .setting-item-info {
+  margin-bottom: 4px;
+}
+
+/* Full-width env vars textarea setting */
+.codian-env-snippet-setting {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.codian-env-snippet-setting .setting-item-info {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.codian-env-snippet-control {
+  width: 100%;
+}
+
+.codian-env-snippet-control textarea {
+  width: 100%;
+  min-width: 100%;
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  resize: vertical;
+}
+
+.codian-snippet-preview {
+  margin: 8px 0;
+  padding: 6px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+}
+
+.codian-env-preview {
+  background: var(--background-primary);
+  padding: 6px;
+  border-radius: 4px;
+  font-family: var(--font-monospace);
+  font-size: 11px;
+  line-height: 1.3;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--text-muted);
+  max-height: 120px;
+  overflow-y: auto;
+  margin: 0;
+}
+
+.codian-snippet-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+
+.codian-cancel-btn,
+.codian-save-btn {
+  padding: 6px 16px;
+  font-size: 13px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.codian-cancel-btn {
+  background: var(--background-modifier-border);
+  color: var(--text-normal);
+}
+
+.codian-cancel-btn:hover {
+  background: var(--background-modifier-border-hover);
+}
+
+.codian-save-btn {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.codian-save-btn:hover {
+  opacity: 0.9;
+}
+
+/* Context limits section in snippet modal */
+.codian-snippet-context-limits {
+  margin-top: 1em;
+}
+
+.codian-snippet-context-limits .setting-item-description {
+  margin-bottom: 0.5em;
+}
+
+.codian-snippet-limit-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin-bottom: 0.25em;
+}
+
+.codian-snippet-limit-model {
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-small);
+}
+
+.codian-snippet-limit-spacer {
+  flex: 1;
+}
+
+.codian-snippet-limit-input {
+  width: 80px;
+}
+
+
+/* ============================================
+   settings/slash-settings.css
+   ============================================ */
+/* Slash Command Settings — unique rules only (shared layout in base.css .codian-sp-*) */
+
+.codian-slash-item-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.codian-slash-item-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: var(--background-modifier-border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+
+/* ============================================
+   settings/mcp-settings.css
+   ============================================ */
+/* MCP Server Settings */
+.codian-mcp-settings-desc {
+  margin-bottom: 12px;
+}
+
+.codian-mcp-container {
+  margin-top: 8px;
+}
+
+.codian-mcp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 0 12px;
+}
+
+.codian-mcp-label {
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+  font-weight: var(--font-medium);
+}
+
+.codian-mcp-add-container {
+  position: relative;
+}
+
+.codian-add-mcp-btn {
+  padding: 4px 12px;
+  border-radius: 4px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-size: 12px;
+  cursor: pointer;
+  border: none;
+}
+
+.codian-add-mcp-btn:hover {
+  background: var(--interactive-accent-hover);
+}
+
+.codian-mcp-add-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  min-width: 180px;
+  background-color: var(--modal-background, var(--background-primary));
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.codian-mcp-add-dropdown.is-visible {
+  display: block;
+}
+
+.codian-mcp-add-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-normal);
+}
+
+.codian-mcp-add-option:hover {
+  background: var(--background-modifier-hover);
+}
+
+.codian-mcp-add-option-icon {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+}
+
+.codian-mcp-add-option-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.codian-mcp-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+}
+
+.codian-mcp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.codian-mcp-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+
+.codian-mcp-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.codian-mcp-item-disabled {
+  opacity: 0.6;
+}
+
+.codian-mcp-status {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.codian-mcp-status-enabled {
+  background: var(--color-green);
+}
+
+.codian-mcp-status-disabled {
+  background: var(--text-muted);
+}
+
+.codian-mcp-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.codian-mcp-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.codian-mcp-name {
+  font-weight: 600;
+}
+
+.codian-mcp-type-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: var(--background-modifier-border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.codian-mcp-context-saving-badge {
+  font-size: 11px;
+  padding: 2px 6px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.codian-mcp-preview {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.codian-mcp-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.codian-mcp-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.codian-mcp-action-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.codian-mcp-action-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.codian-mcp-delete-btn:hover {
+  color: var(--text-error);
+}
+
+
+/* ============================================
+   settings/plugin-settings.css
+   ============================================ */
+/* Plugin Settings */
+.codian-plugin-settings-desc {
+  margin-bottom: 12px;
+}
+
+.codian-plugins-container {
+  margin-top: 8px;
+}
+
+.codian-plugin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 0 12px;
+}
+
+.codian-plugin-label {
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+  font-weight: var(--font-medium);
+}
+
+.codian-plugin-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+}
+
+.codian-plugin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.codian-plugin-section-header {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  padding: 8px 12px 4px;
+  font-weight: 600;
+}
+
+.codian-plugin-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+
+.codian-plugin-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.codian-plugin-item-disabled {
+  opacity: 0.6;
+}
+
+.codian-plugin-item-error {
+  opacity: 0.8;
+}
+
+.codian-plugin-status {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.codian-plugin-status-enabled {
+  background: var(--color-green);
+}
+
+.codian-plugin-status-disabled {
+  background: var(--text-muted);
+}
+
+.codian-plugin-status-error {
+  background: var(--text-error);
+}
+
+.codian-plugin-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.codian-plugin-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.codian-plugin-name {
+  font-weight: 600;
+}
+
+.codian-plugin-version-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: var(--background-modifier-border);
+  border-radius: 4px;
+  color: var(--text-muted);
+}
+
+.codian-plugin-error-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: var(--text-error);
+  color: var(--text-on-accent);
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.codian-plugin-preview {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.codian-plugin-preview-error {
+  color: var(--text-error);
+}
+
+.codian-plugin-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.codian-plugin-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.codian-plugin-action-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.codian-plugin-action-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+
+/* ============================================
+   settings/agent-settings.css
+   ============================================ */
+/* Agent Settings — all structural rules live in base.css .codian-sp-* */
+/* This file is kept as a placeholder for future agent-specific overrides. */
+
+
+/* ============================================
+   accessibility.css
+   ============================================ */
+/* Accessibility - Focus Visible Styles */
+
+/* outline + offset + border-radius */
+.codian-tool-header:focus-visible,
+.codian-thinking-header:focus-visible,
+.codian-subagent-header:focus-visible,
+.codian-header-btn:focus-visible,
+.codian-model-btn:focus-visible,
+.codian-thinking-current:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* outline + offset only */
+.codian-action-btn:focus-visible,
+.codian-toggle-switch:focus-visible,
+.codian-file-chip:focus-visible,
+.codian-image-chip:focus-visible,
+.codian-file-chip-remove:focus-visible,
+.codian-image-remove:focus-visible,
+.codian-image-modal-close:focus-visible,
+.codian-approved-remove-btn:focus-visible,
+.codian-save-env-btn:focus-visible,
+.codian-restore-snippet-btn:focus-visible,
+.codian-edit-snippet-btn:focus-visible,
+.codian-delete-snippet-btn:focus-visible,
+.codian-cancel-btn:focus-visible,
+.codian-save-btn:focus-visible,
+.codian-code-lang-label:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+/* outline + negative offset + border-radius */
+.codian-history-item-content:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
