@@ -1,5 +1,7 @@
 # Codian for Obsidian
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 ![GitHub stars](https://img.shields.io/github/stars/XingshuaiZhang/codian?style=social)
 ![GitHub release](https://img.shields.io/github/v/release/XingshuaiZhang/codian)
 ![License](https://img.shields.io/github/license/XingshuaiZhang/codian)
@@ -27,7 +29,7 @@ Codian is an independently published MIT-licensed fork derived from the upstream
 
 - [Codex CLI](https://developers.openai.com/codex/cli) installed
 - [`codex-acp`](https://github.com/zed-industries/codex-acp) installed for streaming chat
-- Obsidian v1.8.9+
+- Obsidian v1.4.5+
 - OpenAI/Codex authentication configured for the CLI
 - Desktop only
 - Supported platforms: macOS, Windows host with WSL2
@@ -217,7 +219,7 @@ If you encounter `spawn codex ENOENT` or `Codex CLI not found`, the plugin can't
 | Windows host + WSL2 | `wsl which codex` | `/home/you/.local/bin/codex` |
 | npm global install | `npm root -g` | `{root}/@openai/codex/bin/codex.js` |
 
-> **Note**: Native Windows execution is not supported in this fork. Use WSL2 on Windows hosts.
+> **Note**: Native Windows execution is not supported in Codian. Use WSL2 on Windows hosts.
 
 **Alternative**: Add your Node.js bin directory to PATH in Settings → Environment → Custom variables.
 
