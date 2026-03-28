@@ -1,6 +1,6 @@
 {
   "name": "codian",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Codian embeds Codex as an AI collaborator in your Obsidian vault",
   "main": "main.js",
   "scripts": {
@@ -8,6 +8,7 @@
     "build:css": "node scripts/build-css.mjs",
     "dev": "npm run build:css && node esbuild.config.mjs",
     "build": "node scripts/build.mjs production",
+    "release:check": "npm run typecheck && npm run lint && npm run test && npm run build",
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"{src,tests}/**/*.ts\"",
     "lint:fix": "npm run lint -- --fix",

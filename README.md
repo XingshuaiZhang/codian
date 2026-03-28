@@ -75,6 +75,8 @@ Codian to that executable in Settings → Advanced → `codex-acp path`.
 6. Enable "Codian" in Settings → Community plugins
 
 > **Tip**: BRAT will automatically check for updates and notify you when a new version is available.
+>
+> BRAT tracks published GitHub releases. Pushing commits to `main` alone will not produce an update until a new tag/release is published.
 
 ### From source (development)
 

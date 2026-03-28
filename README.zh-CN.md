@@ -73,6 +73,8 @@ npx @zed-industries/codex-acp --help
 6. 在 Obsidian 中启用 `Codian`
 
 > **提示**：BRAT 会自动检查更新并在有新版本时提醒你。
+>
+> BRAT 跟踪的是已发布的 GitHub release。仅把 commit 推到 `main` 并不会触发更新，必须再发布新的 tag/release。
 
 ### 从源码安装（开发）
 
