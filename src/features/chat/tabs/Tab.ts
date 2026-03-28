@@ -609,11 +609,13 @@ export function initializeTabUI(
 export interface ForkContext {
   messages: ChatMessage[];
   sourceSessionId: string;
-  resumeAt: string;
+  resumeAt?: string;
   sourceTitle?: string;
   /** 1-based index used for fork title suffix (counts only non-interrupt user messages). */
   forkAtUserMessage?: number;
   currentNote?: string;
+  externalContextPaths?: string[];
+  enabledMcpServers?: string[];
 }
 
 function deepCloneMessages(messages: ChatMessage[]): ChatMessage[] {
@@ -633,6 +635,8 @@ interface ForkSource {
   sourceSessionId: string;
   sourceTitle?: string;
   currentNote?: string;
+  externalContextPaths?: string[];
+  enabledMcpServers?: string[];
 }
 
 /**
@@ -656,11 +660,22 @@ function resolveForkSource(tab: TabData, plugin: CodianPlugin): ForkSource | nul
   const sourceConversation = tab.conversationId
     ? plugin.getConversationSync(tab.conversationId)
     : undefined;
+  const liveCurrentNote = tab.ui.fileContextManager?.getCurrentNotePath?.() ?? undefined;
+  const liveExternalContextPaths = tab.ui.externalContextSelector?.getExternalContexts() ?? sourceConversation?.externalContextPaths;
+  const liveEnabledMcpServers = tab.ui.mcpServerSelector
+    ? Array.from(tab.ui.mcpServerSelector.getEnabledServers())
+    : sourceConversation?.enabledMcpServers;
 
   return {
     sourceSessionId,
     sourceTitle: sourceConversation?.title,
-    currentNote: sourceConversation?.currentNote,
+    currentNote: liveCurrentNote ?? sourceConversation?.currentNote,
+    externalContextPaths: liveExternalContextPaths && liveExternalContextPaths.length > 0
+      ? [...liveExternalContextPaths]
+      : undefined,
+    enabledMcpServers: liveEnabledMcpServers && liveEnabledMcpServers.length > 0
+      ? [...liveEnabledMcpServers]
+      : undefined,
   };
 }
 
@@ -705,6 +720,8 @@ async function handleForkRequest(
     sourceTitle: source.sourceTitle,
     forkAtUserMessage: countUserMessagesForForkTitle(msgs.slice(0, userIdx + 1)),
     currentNote: source.currentNote,
+    externalContextPaths: source.externalContextPaths,
+    enabledMcpServers: source.enabledMcpServers,
   });
 }
 
@@ -749,6 +766,8 @@ async function handleForkAll(
     sourceTitle: source.sourceTitle,
     forkAtUserMessage: countUserMessagesForForkTitle(msgs) + 1,
     currentNote: source.currentNote,
+    externalContextPaths: source.externalContextPaths,
+    enabledMcpServers: source.enabledMcpServers,
   });
 }
 

@@ -23,15 +23,17 @@
   },
   "chat": {
     "rewind": {
-      "confirmMessage": "이 시점으로 되감으시겠습니까? 이 메시지 이후의 파일 변경 사항이 되돌려집니다. 수동으로 또는 bash를 통해 편집된 파일에는 영향을 미치지 않습니다.",
+      "confirmMessage": "이 지점으로 되감으시겠습니까? 현재 대화에서 이 이후의 메시지는 버려지고, 이 프롬프트는 입력창으로 복원되며, 이후 파일 변경도 가능한 범위에서 되돌립니다. 되감기는 수동으로 또는 bash로 편집한 파일에는 영향을 주지 않습니다.",
       "confirmButton": "되감기",
       "ariaLabel": "여기로 되감기",
-      "notice": "되감기 완료: {count}개 파일 복원됨",
-      "noticeSaveFailed": "되감기 완료: {count}개 파일 복원됨, 하지만 상태를 저장하지 못했습니다: {error}",
+      "notice": "대화를 되감고 파일 {count}개를 복원했습니다. 프롬프트를 바로 수정할 수 있습니다.",
+      "noticeSaveFailed": "대화를 되감았지만(파일 {count}개 복원), 상태를 저장하지 못했습니다: {error}",
       "failed": "되감기 실패: {error}",
       "cannot": "되감기 불가: {error}",
       "unavailableStreaming": "스트리밍 중에는 되감기할 수 없습니다",
-      "unavailableNoUuid": "되감기 불가: 메시지 식별자 누락"
+      "unavailableNoUuid": "되감기 불가: 메시지 식별자 누락",
+      "noticeConversationOnly": "대화를 되감았습니다. 복원할 파일 변경은 없었고, 프롬프트를 바로 수정할 수 있습니다.",
+      "noticePartial": "대화를 되감고 파일 {count}개를 복원했지만, 일부 후속 변경은 안전하게 복원하지 못했습니다."
     },
     "fork": {
       "ariaLabel": "대화 분기",

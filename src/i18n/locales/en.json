@@ -23,15 +23,17 @@
   },
   "chat": {
     "rewind": {
-      "confirmMessage": "Rewind to this point? File changes after this message will be reverted. Rewinding does not affect files edited manually or via bash.",
+      "confirmMessage": "Rewind to this point? Later messages in the current conversation will be discarded, this prompt will be restored to the input box, and file changes will be restored when possible. Rewinding does not affect files edited manually or via bash.",
       "confirmButton": "Rewind",
       "ariaLabel": "Rewind to here",
-      "notice": "Rewound: {count} file(s) reverted",
-      "noticeSaveFailed": "Rewound: {count} file(s) reverted, but failed to save state: {error}",
+      "notice": "Rewound the conversation and restored {count} file(s). The prompt is ready to edit.",
+      "noticeSaveFailed": "Rewound the conversation (restored {count} file(s)), but failed to save state: {error}",
       "failed": "Rewind failed: {error}",
       "cannot": "Cannot rewind: {error}",
       "unavailableStreaming": "Cannot rewind while streaming",
-      "unavailableNoUuid": "Cannot rewind: missing message identifiers"
+      "unavailableNoUuid": "Cannot rewind: missing message identifiers",
+      "noticeConversationOnly": "Rewound the conversation. No file changes needed restoring, and the prompt is ready to edit.",
+      "noticePartial": "Rewound the conversation and restored {count} file(s), but some later changes could not be restored safely."
     },
     "fork": {
       "ariaLabel": "Fork conversation",

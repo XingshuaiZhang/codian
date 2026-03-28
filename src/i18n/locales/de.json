@@ -23,15 +23,17 @@
   },
   "chat": {
     "rewind": {
-      "confirmMessage": "Zu diesem Punkt zurückspulen? Dateiänderungen nach dieser Nachricht werden rückgängig gemacht. Das Zurückspulen betrifft keine manuell oder über Bash bearbeiteten Dateien.",
+      "confirmMessage": "Zu diesem Punkt zurückspulen? Spätere Nachrichten in der aktuellen Unterhaltung werden verworfen, dieser Prompt wird wieder in das Eingabefeld gesetzt und Dateiänderungen werden nach Möglichkeit wiederhergestellt. Das Zurückspulen betrifft keine manuell oder über Bash bearbeiteten Dateien.",
       "confirmButton": "Zurückspulen",
       "ariaLabel": "Hierher zurückspulen",
-      "notice": "Zurückgespult: {count} Datei(en) wiederhergestellt",
-      "noticeSaveFailed": "Zurückgespult: {count} Datei(en) wiederhergestellt, aber Status konnte nicht gespeichert werden: {error}",
+      "notice": "Unterhaltung zurückgespult und {count} Datei(en) wiederhergestellt. Der Prompt kann jetzt bearbeitet werden.",
+      "noticeSaveFailed": "Unterhaltung zurückgespult ({count} Datei(en) wiederhergestellt), aber der Status konnte nicht gespeichert werden: {error}",
       "failed": "Zurückspulen fehlgeschlagen: {error}",
       "cannot": "Zurückspulen nicht möglich: {error}",
       "unavailableStreaming": "Zurückspulen während des Streamings nicht möglich",
-      "unavailableNoUuid": "Zurückspulen nicht möglich: Nachrichtenkennungen fehlen"
+      "unavailableNoUuid": "Zurückspulen nicht möglich: Nachrichtenkennungen fehlen",
+      "noticeConversationOnly": "Unterhaltung zurückgespult. Es mussten keine Dateiänderungen wiederhergestellt werden; der Prompt kann jetzt bearbeitet werden.",
+      "noticePartial": "Unterhaltung zurückgespult und {count} Datei(en) wiederhergestellt, aber einige spätere Änderungen konnten nicht sicher wiederhergestellt werden."
     },
     "fork": {
       "ariaLabel": "Konversation verzweigen",

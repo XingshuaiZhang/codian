@@ -235,6 +235,22 @@ describe('MessageRenderer', () => {
     expect(messagesEl.querySelector('.codian-message-rewind-btn')).not.toBeNull();
   });
 
+  it('does not add a rewind button for the first user message without a previous assistant UUID', () => {
+    const messagesEl = createMockEl();
+    const rewindCallback = jest.fn().mockResolvedValue(undefined);
+    const renderer = new MessageRenderer({ app: {}, settings: { mediaFolder: '' } } as any, createMockComponent() as any, messagesEl, rewindCallback);
+    jest.spyOn(renderer, 'renderContent').mockResolvedValue(undefined);
+
+    const allMessages: ChatMessage[] = [
+      { id: 'u1', role: 'user', content: 'hello', timestamp: 1, sdkUserUuid: 'user-u' },
+      { id: 'a1', role: 'assistant', content: '', timestamp: 2, sdkAssistantUuid: 'resp-a' },
+    ];
+
+    renderer.renderStoredMessage(allMessages[0], allMessages, 0);
+
+    expect(messagesEl.querySelector('.codian-message-rewind-btn')).toBeNull();
+  });
+
   it('does not add a rewind button when stored render is called without context', () => {
     const messagesEl = createMockEl();
     const rewindCallback = jest.fn().mockResolvedValue(undefined);

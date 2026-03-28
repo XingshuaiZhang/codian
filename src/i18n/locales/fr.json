@@ -23,15 +23,17 @@
   },
   "chat": {
     "rewind": {
-      "confirmMessage": "Rembobiner jusqu'à ce point ? Les modifications de fichiers après ce message seront annulées. Le rembobinage n'affecte pas les fichiers modifiés manuellement ou via bash.",
+      "confirmMessage": "Revenir à ce point ? Les messages suivants dans la conversation actuelle seront supprimés, ce prompt sera remis dans le champ de saisie et les modifications de fichiers seront restaurées quand c'est possible. Le rembobinage n'affecte pas les fichiers modifiés manuellement ou via bash.",
       "confirmButton": "Rembobiner",
       "ariaLabel": "Rembobiner jusqu'ici",
-      "notice": "Rembobiné : {count} fichier(s) restauré(s)",
-      "noticeSaveFailed": "Rembobiné : {count} fichier(s) restauré(s), mais impossible d'enregistrer l'état : {error}",
+      "notice": "Conversation rembobinée et {count} fichier(s) restauré(s). Le prompt est prêt à être modifié.",
+      "noticeSaveFailed": "Conversation rembobinée ({count} fichier(s) restauré(s)), mais impossible d'enregistrer l'état : {error}",
       "failed": "Échec du rembobinage : {error}",
       "cannot": "Impossible de rembobiner : {error}",
       "unavailableStreaming": "Impossible de rembobiner pendant le streaming",
-      "unavailableNoUuid": "Impossible de rembobiner : identifiants de message manquants"
+      "unavailableNoUuid": "Impossible de rembobiner : identifiants de message manquants",
+      "noticeConversationOnly": "Conversation rembobinée. Aucun fichier n'avait besoin d'être restauré et le prompt est prêt à être modifié.",
+      "noticePartial": "Conversation rembobinée et {count} fichier(s) restauré(s), mais certaines modifications ultérieures n'ont pas pu être restaurées en toute sécurité."
     },
     "fork": {
       "ariaLabel": "Bifurquer la conversation",

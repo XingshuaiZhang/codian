@@ -43574,6 +43574,8 @@ function buildPermissionPreamble(mode) {
   }
   return null;
 }
+var CODIAN_PRIVATE_DIR = [".codian", "obsidian"];
+var LEGACY_PRIVATE_DIR = [".codex", "obsidian"];
 var CodianService = class {
   constructor(plugin, mcpManager) {
     this.sessionManager = new SessionManager();
@@ -44063,10 +44065,44 @@ ${systemPrompt}
     if (!this.activeTurnSessionId || params.sessionId !== this.activeTurnSessionId) {
       return;
     }
+    await this.prepareAcpUpdateForTurn(update);
     const chunks = this.mapAcpUpdateToChunks(params.sessionId, update);
     for (const chunk of chunks) {
       await this.prepareChunkForTurn(chunk);
       this.pushTurnChunk(chunk);
+    }
+  }
+  async prepareAcpUpdateForTurn(update) {
+    if (update.sessionUpdate !== "tool_call" && update.sessionUpdate !== "tool_call_update") {
+      return;
+    }
+    const artifact = this.activeTurnArtifact;
+    if (!artifact) {
+      return;
+    }
+    const toolName = this.getToolNameFromAcpUpdate(update);
+    const isMutatingTool = toolName === TOOL_WRITE || toolName === TOOL_EDIT || toolName === TOOL_NOTEBOOK_EDIT || toolName === TOOL_BASH;
+    if (!isMutatingTool) {
+      return;
+    }
+    const isCompleted = update.status === "completed" || update.status === "failed";
+    if (!isCompleted) {
+      return;
+    }
+    const input = this.getToolInputFromAcpUpdate(update);
+    const hasDirectPath = !!getPathFromToolInput(toolName, input);
+    const locations = Array.isArray(update.locations) ? Array.from(new Set(update.locations.map((location) => typeof location.path === "string" ? location.path : "").filter(Boolean))) : [];
+    if (toolName !== TOOL_BASH && hasDirectPath) {
+      return;
+    }
+    if (locations.length === 0) {
+      if (toolName === TOOL_BASH || !hasDirectPath) {
+        artifact.opaqueSideEffects = true;
+      }
+      return;
+    }
+    for (const filePath of locations) {
+      await this.backfillBackupForChangedFile(artifact, this.activeTurnGitSnapshot, filePath);
     }
   }
   mapAcpUpdateToChunks(sessionId, update) {
@@ -44209,8 +44245,6 @@ ${systemPrompt}
     if (chunk.type === "tool_use") {
       if (chunk.name === TOOL_WRITE || chunk.name === TOOL_EDIT || chunk.name === TOOL_NOTEBOOK_EDIT) {
         await this.backupFileForTurn(artifact, chunk.name, chunk.input);
-      } else if (chunk.name === TOOL_BASH) {
-        artifact.opaqueSideEffects = true;
       }
     }
     if (chunk.type === "usage" && chunk.usage.contextWindow > 0) {
@@ -44225,7 +44259,7 @@ ${systemPrompt}
     if (!images || images.length === 0) {
       return [];
     }
-    const baseDir = path4.join(this.getVaultPath(), ".codex", "obsidian", "tmp", "images", turnId);
+    const baseDir = path4.join(this.getVaultPath(), ...CODIAN_PRIVATE_DIR, "tmp", "images", turnId);
     await fs4.promises.mkdir(baseDir, { recursive: true });
     const written = [];
     for (let i = 0; i < images.length; i++) {
@@ -44239,13 +44273,13 @@ ${systemPrompt}
     }
     return written;
   }
-  getTurnArtifactDir(turnId) {
-    return path4.join(this.getVaultPath(), ".codex", "obsidian", "rewind", turnId);
+  getTurnArtifactDir(turnId, legacy = false) {
+    const privateDir = legacy ? LEGACY_PRIVATE_DIR : CODIAN_PRIVATE_DIR;
+    return path4.join(this.getVaultPath(), ...privateDir, "rewind", turnId);
   }
   async backupFileForTurn(artifact, toolName, input) {
     const filePath = getPathFromToolInput(toolName, input);
     if (!filePath) {
-      artifact.opaqueSideEffects = true;
       return;
     }
     const normalized = normalizePathForFilesystem(filePath);
@@ -44281,13 +44315,18 @@ ${systemPrompt}
     await fs4.promises.writeFile(manifestPath, JSON.stringify(artifact, null, 2));
   }
   async loadTurnArtifact(turnId) {
-    const manifestPath = path4.join(this.getTurnArtifactDir(turnId), "manifest.json");
-    try {
-      const raw = await fs4.promises.readFile(manifestPath, "utf8");
-      return JSON.parse(raw);
-    } catch (e) {
-      return null;
+    const manifestPaths = [
+      path4.join(this.getTurnArtifactDir(turnId), "manifest.json"),
+      path4.join(this.getTurnArtifactDir(turnId, true), "manifest.json")
+    ];
+    for (const manifestPath of manifestPaths) {
+      try {
+        const raw = await fs4.promises.readFile(manifestPath, "utf8");
+        return JSON.parse(raw);
+      } catch (e) {
+      }
     }
+    return null;
   }
   async restoreTurnArtifact(artifact) {
     for (const entry of artifact.backups) {
@@ -44338,12 +44377,29 @@ ${systemPrompt}
         stdio: ["ignore", "pipe", "ignore"]
       });
       untracked.toString("utf8").split("\0").map((entry) => entry.trim()).filter(Boolean).forEach((entry) => dirtyPaths.add(entry.replace(/\\/g, "/")));
+      const ignored = (0, import_child_process2.execFileSync)("git", ["ls-files", "--others", "--ignored", "--exclude-standard", "-z"], {
+        cwd: repoRoot,
+        encoding: "buffer",
+        stdio: ["ignore", "pipe", "ignore"]
+      });
+      ignored.toString("utf8").split("\0").map((entry) => entry.trim()).filter(Boolean).forEach((entry) => dirtyPaths.add(entry.replace(/\\/g, "/")));
       return { repoRoot, hasHead, dirtyPaths };
     } catch (e) {
       return null;
     }
   }
-  async backfillBackupForChangedFile(artifact, snapshot, filePath, changeKind) {
+  pathExistsInGitHead(repoRoot, relativePath) {
+    try {
+      (0, import_child_process2.execFileSync)("git", ["cat-file", "-e", `HEAD:${relativePath}`], {
+        cwd: repoRoot,
+        stdio: ["ignore", "ignore", "ignore"]
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  async backfillBackupForChangedFile(artifact, snapshot, filePath) {
     if (!filePath) {
       artifact.opaqueSideEffects = true;
       return;
@@ -44355,13 +44411,6 @@ ${systemPrompt}
     }
     artifact.filesChanged.push(absolute);
     await fs4.promises.mkdir(this.getTurnArtifactDir(artifact.turnId), { recursive: true });
-    if (changeKind === "add") {
-      artifact.backups.push({
-        originalPath: absolute,
-        existedBefore: false
-      });
-      return;
-    }
     if (!snapshot) {
       artifact.opaqueSideEffects = true;
       return;
@@ -44371,6 +44420,14 @@ ${systemPrompt}
     const canRestoreFromGit = isWithinRepo && snapshot.hasHead && !snapshot.dirtyPaths.has(relativePath);
     if (!canRestoreFromGit) {
       artifact.opaqueSideEffects = true;
+      return;
+    }
+    const existedInHead = this.pathExistsInGitHead(snapshot.repoRoot, relativePath);
+    if (!existedInHead) {
+      artifact.backups.push({
+        originalPath: absolute,
+        existedBefore: false
+      });
       return;
     }
     const backupFile = path4.join(this.getTurnArtifactDir(artifact.turnId), `backup-${artifact.backups.length}`);
@@ -44514,22 +44571,52 @@ ${systemPrompt}
     void this.disconnectAcpRuntime();
   }
   async rewindFiles(sdkUserUuid, _dryRun) {
-    return this.rewind(sdkUserUuid, "");
+    return this.rewind(sdkUserUuid, "", [{ turnId: sdkUserUuid, expectsFileRestore: true }]);
   }
-  async rewind(sdkUserUuid, _sdkAssistantUuid) {
-    const artifact = await this.loadTurnArtifact(sdkUserUuid);
-    if (!artifact) {
-      return { canRewind: false, error: "No rewind data is available for this turn." };
+  async rewind(sdkUserUuid, sdkAssistantUuid, turnSpecs) {
+    const rewindTurns = turnSpecs && turnSpecs.length > 0 ? turnSpecs : [{ turnId: sdkUserUuid, expectsFileRestore: true }];
+    const restoredFiles = /* @__PURE__ */ new Set();
+    const missingArtifacts = [];
+    const unsafeTurns = [];
+    const warnings = [];
+    try {
+      for (const turn of [...rewindTurns].reverse()) {
+        const artifact = await this.loadTurnArtifact(turn.turnId);
+        if (!artifact) {
+          if (turn.expectsFileRestore) {
+            missingArtifacts.push(turn.turnId);
+            warnings.push(`No rewind data is available for turn ${turn.turnId}.`);
+          }
+          continue;
+        }
+        if (artifact.opaqueSideEffects) {
+          unsafeTurns.push(turn.turnId);
+          warnings.push(`Turn ${turn.turnId} used opaque side effects and its file changes were not restored.`);
+          continue;
+        }
+        await this.restoreTurnArtifact(artifact);
+        for (const filePath of artifact.filesChanged) {
+          restoredFiles.add(filePath);
+        }
+      }
+    } catch (error48) {
+      return {
+        conversationRewound: false,
+        restoredFiles: Array.from(restoredFiles),
+        missingArtifacts,
+        unsafeTurns,
+        warnings,
+        error: error48 instanceof Error ? error48.message : "Unknown error"
+      };
     }
-    if (artifact.opaqueSideEffects) {
-      return { canRewind: false, error: "This turn used opaque side effects and cannot be safely rewound." };
-    }
-    await this.restoreTurnArtifact(artifact);
     this.sessionManager.invalidateSession();
-    this.pendingResumeAt = sdkUserUuid;
+    this.pendingResumeAt = sdkAssistantUuid || void 0;
     return {
-      canRewind: true,
-      filesChanged: artifact.filesChanged,
+      conversationRewound: true,
+      restoredFiles: Array.from(restoredFiles),
+      missingArtifacts,
+      unsafeTurns,
+      warnings,
       insertions: 0,
       deletions: 0
     };
@@ -44591,15 +44678,17 @@ var common = {
 };
 var chat = {
   rewind: {
-    confirmMessage: "Zu diesem Punkt zur\xFCckspulen? Datei\xE4nderungen nach dieser Nachricht werden r\xFCckg\xE4ngig gemacht. Das Zur\xFCckspulen betrifft keine manuell oder \xFCber Bash bearbeiteten Dateien.",
+    confirmMessage: "Zu diesem Punkt zur\xFCckspulen? Sp\xE4tere Nachrichten in der aktuellen Unterhaltung werden verworfen, dieser Prompt wird wieder in das Eingabefeld gesetzt und Datei\xE4nderungen werden nach M\xF6glichkeit wiederhergestellt. Das Zur\xFCckspulen betrifft keine manuell oder \xFCber Bash bearbeiteten Dateien.",
     confirmButton: "Zur\xFCckspulen",
     ariaLabel: "Hierher zur\xFCckspulen",
-    notice: "Zur\xFCckgespult: {count} Datei(en) wiederhergestellt",
-    noticeSaveFailed: "Zur\xFCckgespult: {count} Datei(en) wiederhergestellt, aber Status konnte nicht gespeichert werden: {error}",
+    notice: "Unterhaltung zur\xFCckgespult und {count} Datei(en) wiederhergestellt. Der Prompt kann jetzt bearbeitet werden.",
+    noticeSaveFailed: "Unterhaltung zur\xFCckgespult ({count} Datei(en) wiederhergestellt), aber der Status konnte nicht gespeichert werden: {error}",
     failed: "Zur\xFCckspulen fehlgeschlagen: {error}",
     cannot: "Zur\xFCckspulen nicht m\xF6glich: {error}",
     unavailableStreaming: "Zur\xFCckspulen w\xE4hrend des Streamings nicht m\xF6glich",
-    unavailableNoUuid: "Zur\xFCckspulen nicht m\xF6glich: Nachrichtenkennungen fehlen"
+    unavailableNoUuid: "Zur\xFCckspulen nicht m\xF6glich: Nachrichtenkennungen fehlen",
+    noticeConversationOnly: "Unterhaltung zur\xFCckgespult. Es mussten keine Datei\xE4nderungen wiederhergestellt werden; der Prompt kann jetzt bearbeitet werden.",
+    noticePartial: "Unterhaltung zur\xFCckgespult und {count} Datei(en) wiederhergestellt, aber einige sp\xE4tere \xC4nderungen konnten nicht sicher wiederhergestellt werden."
   },
   fork: {
     ariaLabel: "Konversation verzweigen",
@@ -44906,15 +44995,17 @@ var common2 = {
 };
 var chat2 = {
   rewind: {
-    confirmMessage: "Rewind to this point? File changes after this message will be reverted. Rewinding does not affect files edited manually or via bash.",
+    confirmMessage: "Rewind to this point? Later messages in the current conversation will be discarded, this prompt will be restored to the input box, and file changes will be restored when possible. Rewinding does not affect files edited manually or via bash.",
     confirmButton: "Rewind",
     ariaLabel: "Rewind to here",
-    notice: "Rewound: {count} file(s) reverted",
-    noticeSaveFailed: "Rewound: {count} file(s) reverted, but failed to save state: {error}",
+    notice: "Rewound the conversation and restored {count} file(s). The prompt is ready to edit.",
+    noticeSaveFailed: "Rewound the conversation (restored {count} file(s)), but failed to save state: {error}",
     failed: "Rewind failed: {error}",
     cannot: "Cannot rewind: {error}",
     unavailableStreaming: "Cannot rewind while streaming",
-    unavailableNoUuid: "Cannot rewind: missing message identifiers"
+    unavailableNoUuid: "Cannot rewind: missing message identifiers",
+    noticeConversationOnly: "Rewound the conversation. No file changes needed restoring, and the prompt is ready to edit.",
+    noticePartial: "Rewound the conversation and restored {count} file(s), but some later changes could not be restored safely."
   },
   fork: {
     ariaLabel: "Fork conversation",
@@ -45221,15 +45312,17 @@ var common3 = {
 };
 var chat3 = {
   rewind: {
-    confirmMessage: "\xBFRebobinar a este punto? Los cambios de archivos despu\xE9s de este mensaje ser\xE1n revertidos. El rebobinado no afecta archivos editados manualmente o mediante bash.",
+    confirmMessage: "\xBFRebobinar hasta este punto? Los mensajes posteriores de la conversaci\xF3n actual se descartar\xE1n, este prompt volver\xE1 al cuadro de entrada y los cambios de archivos se restaurar\xE1n cuando sea posible. Rebobinar no afecta a los archivos editados manualmente o mediante bash.",
     confirmButton: "Rebobinar",
     ariaLabel: "Rebobinar hasta aqu\xED",
-    notice: "Rebobinado: {count} archivo(s) revertido(s)",
-    noticeSaveFailed: "Rebobinado: {count} archivo(s) revertido(s), pero no se pudo guardar el estado: {error}",
+    notice: "Se rebobin\xF3 la conversaci\xF3n y se restauraron {count} archivo(s). El prompt est\xE1 listo para editarse.",
+    noticeSaveFailed: "Se rebobin\xF3 la conversaci\xF3n (se restauraron {count} archivo(s)), pero no se pudo guardar el estado: {error}",
     failed: "Error al rebobinar: {error}",
     cannot: "No se puede rebobinar: {error}",
     unavailableStreaming: "No se puede rebobinar durante la transmisi\xF3n",
-    unavailableNoUuid: "No se puede rebobinar: faltan identificadores de mensaje"
+    unavailableNoUuid: "No se puede rebobinar: faltan identificadores de mensaje",
+    noticeConversationOnly: "Se rebobin\xF3 la conversaci\xF3n. No hab\xEDa cambios de archivos que restaurar y el prompt est\xE1 listo para editarse.",
+    noticePartial: "Se rebobin\xF3 la conversaci\xF3n y se restauraron {count} archivo(s), pero algunos cambios posteriores no pudieron restaurarse de forma segura."
   },
   fork: {
     ariaLabel: "Bifurcar conversaci\xF3n",
@@ -45536,15 +45629,17 @@ var common4 = {
 };
 var chat4 = {
   rewind: {
-    confirmMessage: "Rembobiner jusqu'\xE0 ce point ? Les modifications de fichiers apr\xE8s ce message seront annul\xE9es. Le rembobinage n'affecte pas les fichiers modifi\xE9s manuellement ou via bash.",
+    confirmMessage: "Revenir \xE0 ce point ? Les messages suivants dans la conversation actuelle seront supprim\xE9s, ce prompt sera remis dans le champ de saisie et les modifications de fichiers seront restaur\xE9es quand c'est possible. Le rembobinage n'affecte pas les fichiers modifi\xE9s manuellement ou via bash.",
     confirmButton: "Rembobiner",
     ariaLabel: "Rembobiner jusqu'ici",
-    notice: "Rembobin\xE9 : {count} fichier(s) restaur\xE9(s)",
-    noticeSaveFailed: "Rembobin\xE9 : {count} fichier(s) restaur\xE9(s), mais impossible d'enregistrer l'\xE9tat : {error}",
+    notice: "Conversation rembobin\xE9e et {count} fichier(s) restaur\xE9(s). Le prompt est pr\xEAt \xE0 \xEAtre modifi\xE9.",
+    noticeSaveFailed: "Conversation rembobin\xE9e ({count} fichier(s) restaur\xE9(s)), mais impossible d'enregistrer l'\xE9tat : {error}",
     failed: "\xC9chec du rembobinage : {error}",
     cannot: "Impossible de rembobiner : {error}",
     unavailableStreaming: "Impossible de rembobiner pendant le streaming",
-    unavailableNoUuid: "Impossible de rembobiner : identifiants de message manquants"
+    unavailableNoUuid: "Impossible de rembobiner : identifiants de message manquants",
+    noticeConversationOnly: "Conversation rembobin\xE9e. Aucun fichier n'avait besoin d'\xEAtre restaur\xE9 et le prompt est pr\xEAt \xE0 \xEAtre modifi\xE9.",
+    noticePartial: "Conversation rembobin\xE9e et {count} fichier(s) restaur\xE9(s), mais certaines modifications ult\xE9rieures n'ont pas pu \xEAtre restaur\xE9es en toute s\xE9curit\xE9."
   },
   fork: {
     ariaLabel: "Bifurquer la conversation",
@@ -45851,15 +45946,17 @@ var common5 = {
 };
 var chat5 = {
   rewind: {
-    confirmMessage: "\u3053\u306E\u6642\u70B9\u306B\u5DFB\u304D\u623B\u3057\u307E\u3059\u304B\uFF1F\u3053\u306E\u30E1\u30C3\u30BB\u30FC\u30B8\u4EE5\u964D\u306E\u30D5\u30A1\u30A4\u30EB\u5909\u66F4\u304C\u5143\u306B\u623B\u3055\u308C\u307E\u3059\u3002\u624B\u52D5\u307E\u305F\u306Fbash\u3067\u7DE8\u96C6\u3055\u308C\u305F\u30D5\u30A1\u30A4\u30EB\u306B\u306F\u5F71\u97FF\u3057\u307E\u305B\u3093\u3002",
+    confirmMessage: "\u3053\u3053\u307E\u3067\u5DFB\u304D\u623B\u3057\u307E\u3059\u304B\uFF1F\u73FE\u5728\u306E\u4F1A\u8A71\u3067\u3053\u306E\u5F8C\u306E\u30E1\u30C3\u30BB\u30FC\u30B8\u306F\u7834\u68C4\u3055\u308C\u3001\u3053\u306E\u30D7\u30ED\u30F3\u30D7\u30C8\u306F\u5165\u529B\u6B04\u306B\u623B\u308A\u3001\u53EF\u80FD\u306A\u7BC4\u56F2\u3067\u5F8C\u7D9A\u306E\u30D5\u30A1\u30A4\u30EB\u5909\u66F4\u3082\u5FA9\u5143\u3055\u308C\u307E\u3059\u3002\u5DFB\u304D\u623B\u3057\u306F\u624B\u52D5\u307E\u305F\u306F bash \u3067\u7DE8\u96C6\u3057\u305F\u30D5\u30A1\u30A4\u30EB\u306B\u306F\u5F71\u97FF\u3057\u307E\u305B\u3093\u3002",
     confirmButton: "\u5DFB\u304D\u623B\u3059",
     ariaLabel: "\u3053\u3053\u306B\u5DFB\u304D\u623B\u3059",
-    notice: "\u5DFB\u304D\u623B\u3057\u5B8C\u4E86\uFF1A{count} \u500B\u306E\u30D5\u30A1\u30A4\u30EB\u3092\u5FA9\u5143",
-    noticeSaveFailed: "\u5DFB\u304D\u623B\u3057\u5B8C\u4E86\uFF1A{count} \u500B\u306E\u30D5\u30A1\u30A4\u30EB\u3092\u5FA9\u5143\u3057\u307E\u3057\u305F\u304C\u3001\u72B6\u614B\u3092\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\uFF1A{error}",
+    notice: "\u4F1A\u8A71\u3092\u5DFB\u304D\u623B\u3057\u3001{count} \u4EF6\u306E\u30D5\u30A1\u30A4\u30EB\u3092\u5FA9\u5143\u3057\u307E\u3057\u305F\u3002\u30D7\u30ED\u30F3\u30D7\u30C8\u306F\u7DE8\u96C6\u3067\u304D\u308B\u72B6\u614B\u3067\u3059\u3002",
+    noticeSaveFailed: "\u4F1A\u8A71\u3092\u5DFB\u304D\u623B\u3057\u307E\u3057\u305F\uFF08{count} \u4EF6\u306E\u30D5\u30A1\u30A4\u30EB\u3092\u5FA9\u5143\uFF09\u304C\u3001\u72B6\u614B\u3092\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\uFF1A{error}",
     failed: "\u5DFB\u304D\u623B\u3057\u306B\u5931\u6557\uFF1A{error}",
     cannot: "\u5DFB\u304D\u623B\u3057\u3067\u304D\u307E\u305B\u3093\uFF1A{error}",
     unavailableStreaming: "\u30B9\u30C8\u30EA\u30FC\u30DF\u30F3\u30B0\u4E2D\u306F\u5DFB\u304D\u623B\u3057\u3067\u304D\u307E\u305B\u3093",
-    unavailableNoUuid: "\u5DFB\u304D\u623B\u3057\u3067\u304D\u307E\u305B\u3093\uFF1A\u30E1\u30C3\u30BB\u30FC\u30B8\u8B58\u5225\u5B50\u304C\u3042\u308A\u307E\u305B\u3093"
+    unavailableNoUuid: "\u5DFB\u304D\u623B\u3057\u3067\u304D\u307E\u305B\u3093\uFF1A\u30E1\u30C3\u30BB\u30FC\u30B8\u8B58\u5225\u5B50\u304C\u3042\u308A\u307E\u305B\u3093",
+    noticeConversationOnly: "\u4F1A\u8A71\u3092\u5DFB\u304D\u623B\u3057\u307E\u3057\u305F\u3002\u5FA9\u5143\u304C\u5FC5\u8981\u306A\u30D5\u30A1\u30A4\u30EB\u5909\u66F4\u306F\u306A\u304F\u3001\u30D7\u30ED\u30F3\u30D7\u30C8\u306F\u7DE8\u96C6\u3067\u304D\u308B\u72B6\u614B\u3067\u3059\u3002",
+    noticePartial: "\u4F1A\u8A71\u3092\u5DFB\u304D\u623B\u3057\u3001{count} \u4EF6\u306E\u30D5\u30A1\u30A4\u30EB\u3092\u5FA9\u5143\u3057\u307E\u3057\u305F\u304C\u3001\u4E00\u90E8\u306E\u5F8C\u7D9A\u5909\u66F4\u306F\u5B89\u5168\u306B\u5FA9\u5143\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002"
   },
   fork: {
     ariaLabel: "\u4F1A\u8A71\u3092\u5206\u5C90",
@@ -46166,15 +46263,17 @@ var common6 = {
 };
 var chat6 = {
   rewind: {
-    confirmMessage: "\uC774 \uC2DC\uC810\uC73C\uB85C \uB418\uAC10\uC73C\uC2DC\uACA0\uC2B5\uB2C8\uAE4C? \uC774 \uBA54\uC2DC\uC9C0 \uC774\uD6C4\uC758 \uD30C\uC77C \uBCC0\uACBD \uC0AC\uD56D\uC774 \uB418\uB3CC\uB824\uC9D1\uB2C8\uB2E4. \uC218\uB3D9\uC73C\uB85C \uB610\uB294 bash\uB97C \uD1B5\uD574 \uD3B8\uC9D1\uB41C \uD30C\uC77C\uC5D0\uB294 \uC601\uD5A5\uC744 \uBBF8\uCE58\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.",
+    confirmMessage: "\uC774 \uC9C0\uC810\uC73C\uB85C \uB418\uAC10\uC73C\uC2DC\uACA0\uC2B5\uB2C8\uAE4C? \uD604\uC7AC \uB300\uD654\uC5D0\uC11C \uC774 \uC774\uD6C4\uC758 \uBA54\uC2DC\uC9C0\uB294 \uBC84\uB824\uC9C0\uACE0, \uC774 \uD504\uB86C\uD504\uD2B8\uB294 \uC785\uB825\uCC3D\uC73C\uB85C \uBCF5\uC6D0\uB418\uBA70, \uC774\uD6C4 \uD30C\uC77C \uBCC0\uACBD\uB3C4 \uAC00\uB2A5\uD55C \uBC94\uC704\uC5D0\uC11C \uB418\uB3CC\uB9BD\uB2C8\uB2E4. \uB418\uAC10\uAE30\uB294 \uC218\uB3D9\uC73C\uB85C \uB610\uB294 bash\uB85C \uD3B8\uC9D1\uD55C \uD30C\uC77C\uC5D0\uB294 \uC601\uD5A5\uC744 \uC8FC\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.",
     confirmButton: "\uB418\uAC10\uAE30",
     ariaLabel: "\uC5EC\uAE30\uB85C \uB418\uAC10\uAE30",
-    notice: "\uB418\uAC10\uAE30 \uC644\uB8CC: {count}\uAC1C \uD30C\uC77C \uBCF5\uC6D0\uB428",
-    noticeSaveFailed: "\uB418\uAC10\uAE30 \uC644\uB8CC: {count}\uAC1C \uD30C\uC77C \uBCF5\uC6D0\uB428, \uD558\uC9C0\uB9CC \uC0C1\uD0DC\uB97C \uC800\uC7A5\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4: {error}",
+    notice: "\uB300\uD654\uB97C \uB418\uAC10\uACE0 \uD30C\uC77C {count}\uAC1C\uB97C \uBCF5\uC6D0\uD588\uC2B5\uB2C8\uB2E4. \uD504\uB86C\uD504\uD2B8\uB97C \uBC14\uB85C \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.",
+    noticeSaveFailed: "\uB300\uD654\uB97C \uB418\uAC10\uC558\uC9C0\uB9CC(\uD30C\uC77C {count}\uAC1C \uBCF5\uC6D0), \uC0C1\uD0DC\uB97C \uC800\uC7A5\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4: {error}",
     failed: "\uB418\uAC10\uAE30 \uC2E4\uD328: {error}",
     cannot: "\uB418\uAC10\uAE30 \uBD88\uAC00: {error}",
     unavailableStreaming: "\uC2A4\uD2B8\uB9AC\uBC0D \uC911\uC5D0\uB294 \uB418\uAC10\uAE30\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4",
-    unavailableNoUuid: "\uB418\uAC10\uAE30 \uBD88\uAC00: \uBA54\uC2DC\uC9C0 \uC2DD\uBCC4\uC790 \uB204\uB77D"
+    unavailableNoUuid: "\uB418\uAC10\uAE30 \uBD88\uAC00: \uBA54\uC2DC\uC9C0 \uC2DD\uBCC4\uC790 \uB204\uB77D",
+    noticeConversationOnly: "\uB300\uD654\uB97C \uB418\uAC10\uC558\uC2B5\uB2C8\uB2E4. \uBCF5\uC6D0\uD560 \uD30C\uC77C \uBCC0\uACBD\uC740 \uC5C6\uC5C8\uACE0, \uD504\uB86C\uD504\uD2B8\uB97C \uBC14\uB85C \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.",
+    noticePartial: "\uB300\uD654\uB97C \uB418\uAC10\uACE0 \uD30C\uC77C {count}\uAC1C\uB97C \uBCF5\uC6D0\uD588\uC9C0\uB9CC, \uC77C\uBD80 \uD6C4\uC18D \uBCC0\uACBD\uC740 \uC548\uC804\uD558\uAC8C \uBCF5\uC6D0\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4."
   },
   fork: {
     ariaLabel: "\uB300\uD654 \uBD84\uAE30",
@@ -46481,15 +46580,17 @@ var common7 = {
 };
 var chat7 = {
   rewind: {
-    confirmMessage: "Retroceder at\xE9 este ponto? As altera\xE7\xF5es de arquivos ap\xF3s esta mensagem ser\xE3o revertidas. O retrocesso n\xE3o afeta arquivos editados manualmente ou via bash.",
+    confirmMessage: "Retroceder at\xE9 este ponto? As mensagens posteriores na conversa atual ser\xE3o descartadas, este prompt voltar\xE1 para a caixa de entrada e as altera\xE7\xF5es de arquivos ser\xE3o restauradas quando poss\xEDvel. Retroceder n\xE3o afeta arquivos editados manualmente ou via bash.",
     confirmButton: "Retroceder",
     ariaLabel: "Retroceder at\xE9 aqui",
-    notice: "Retrocedido: {count} arquivo(s) revertido(s)",
-    noticeSaveFailed: "Retrocedido: {count} arquivo(s) revertido(s), mas n\xE3o foi poss\xEDvel salvar o estado: {error}",
+    notice: "Conversa retrocedida e {count} arquivo(s) restaurado(s). O prompt est\xE1 pronto para edi\xE7\xE3o.",
+    noticeSaveFailed: "Conversa retrocedida ({count} arquivo(s) restaurado(s)), mas n\xE3o foi poss\xEDvel salvar o estado: {error}",
     failed: "Falha ao retroceder: {error}",
     cannot: "N\xE3o \xE9 poss\xEDvel retroceder: {error}",
     unavailableStreaming: "N\xE3o \xE9 poss\xEDvel retroceder durante a transmiss\xE3o",
-    unavailableNoUuid: "N\xE3o \xE9 poss\xEDvel retroceder: identificadores de mensagem ausentes"
+    unavailableNoUuid: "N\xE3o \xE9 poss\xEDvel retroceder: identificadores de mensagem ausentes",
+    noticeConversationOnly: "Conversa retrocedida. N\xE3o havia altera\xE7\xF5es de arquivo para restaurar, e o prompt est\xE1 pronto para edi\xE7\xE3o.",
+    noticePartial: "Conversa retrocedida e {count} arquivo(s) restaurado(s), mas algumas altera\xE7\xF5es posteriores n\xE3o puderam ser restauradas com seguran\xE7a."
   },
   fork: {
     ariaLabel: "Bifurcar conversa",
@@ -46796,15 +46897,17 @@ var common8 = {
 };
 var chat8 = {
   rewind: {
-    confirmMessage: "\u041E\u0442\u043A\u0430\u0442\u0438\u0442\u044C \u0434\u043E \u044D\u0442\u043E\u0439 \u0442\u043E\u0447\u043A\u0438? \u0418\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u0444\u0430\u0439\u043B\u043E\u0432 \u043F\u043E\u0441\u043B\u0435 \u044D\u0442\u043E\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u0431\u0443\u0434\u0443\u0442 \u043E\u0442\u043C\u0435\u043D\u0435\u043D\u044B. \u041E\u0442\u043A\u0430\u0442 \u043D\u0435 \u0437\u0430\u0442\u0440\u0430\u0433\u0438\u0432\u0430\u0435\u0442 \u0444\u0430\u0439\u043B\u044B, \u043E\u0442\u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0435 \u0432\u0440\u0443\u0447\u043D\u0443\u044E \u0438\u043B\u0438 \u0447\u0435\u0440\u0435\u0437 bash.",
+    confirmMessage: "\u041E\u0442\u043A\u0430\u0442\u0438\u0442\u044C \u0434\u043E \u044D\u0442\u043E\u0433\u043E \u043C\u0435\u0441\u0442\u0430? \u041F\u043E\u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u0432 \u0442\u0435\u043A\u0443\u0449\u0435\u043C \u0434\u0438\u0430\u043B\u043E\u0433\u0435 \u0431\u0443\u0434\u0443\u0442 \u043E\u0442\u0431\u0440\u043E\u0448\u0435\u043D\u044B, \u044D\u0442\u043E\u0442 \u0437\u0430\u043F\u0440\u043E\u0441 \u0432\u0435\u0440\u043D\u0451\u0442\u0441\u044F \u0432 \u043F\u043E\u043B\u0435 \u0432\u0432\u043E\u0434\u0430, \u0430 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u0444\u0430\u0439\u043B\u043E\u0432 \u0431\u0443\u0434\u0443\u0442 \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B \u0442\u0430\u043C, \u0433\u0434\u0435 \u044D\u0442\u043E \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E. \u041E\u0442\u043A\u0430\u0442 \u043D\u0435 \u0437\u0430\u0442\u0440\u0430\u0433\u0438\u0432\u0430\u0435\u0442 \u0444\u0430\u0439\u043B\u044B, \u0438\u0437\u043C\u0435\u043D\u0451\u043D\u043D\u044B\u0435 \u0432\u0440\u0443\u0447\u043D\u0443\u044E \u0438\u043B\u0438 \u0447\u0435\u0440\u0435\u0437 bash.",
     confirmButton: "\u041E\u0442\u043A\u0430\u0442\u0438\u0442\u044C",
     ariaLabel: "\u041E\u0442\u043A\u0430\u0442\u0438\u0442\u044C \u0441\u044E\u0434\u0430",
-    notice: "\u041E\u0442\u043A\u0430\u0447\u0435\u043D\u043E: \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u043E \u0444\u0430\u0439\u043B\u043E\u0432 \u2014 {count}",
-    noticeSaveFailed: "\u041E\u0442\u043A\u0430\u0442 \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D: \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u043E \u0444\u0430\u0439\u043B\u043E\u0432 \u2014 {count}, \u043D\u043E \u043D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435: {error}",
+    notice: "\u0414\u0438\u0430\u043B\u043E\u0433 \u043E\u0442\u043A\u0430\u0442\u0430\u043D, \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u043E {count} \u0444\u0430\u0439\u043B(\u043E\u0432). \u0417\u0430\u043F\u0440\u043E\u0441 \u0441\u043D\u043E\u0432\u0430 \u0432 \u043F\u043E\u043B\u0435 \u0432\u0432\u043E\u0434\u0430 \u0438 \u0433\u043E\u0442\u043E\u0432 \u043A \u043F\u0440\u0430\u0432\u043A\u0435.",
+    noticeSaveFailed: "\u0414\u0438\u0430\u043B\u043E\u0433 \u043E\u0442\u043A\u0430\u0442\u0430\u043D (\u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u043E {count} \u0444\u0430\u0439\u043B(\u043E\u0432)), \u043D\u043E \u043D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435: {error}",
     failed: "\u041E\u0448\u0438\u0431\u043A\u0430 \u043E\u0442\u043A\u0430\u0442\u0430: {error}",
     cannot: "\u041D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E \u043E\u0442\u043A\u0430\u0442\u0438\u0442\u044C: {error}",
     unavailableStreaming: "\u041D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E \u043E\u0442\u043A\u0430\u0442\u0438\u0442\u044C \u0432\u043E \u0432\u0440\u0435\u043C\u044F \u043F\u043E\u0442\u043E\u043A\u043E\u0432\u043E\u0439 \u043F\u0435\u0440\u0435\u0434\u0430\u0447\u0438",
-    unavailableNoUuid: "\u041D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E \u043E\u0442\u043A\u0430\u0442\u0438\u0442\u044C: \u043E\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u044E\u0442 \u0438\u0434\u0435\u043D\u0442\u0438\u0444\u0438\u043A\u0430\u0442\u043E\u0440\u044B \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439"
+    unavailableNoUuid: "\u041D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E \u043E\u0442\u043A\u0430\u0442\u0438\u0442\u044C: \u043E\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u044E\u0442 \u0438\u0434\u0435\u043D\u0442\u0438\u0444\u0438\u043A\u0430\u0442\u043E\u0440\u044B \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439",
+    noticeConversationOnly: "\u0414\u0438\u0430\u043B\u043E\u0433 \u043E\u0442\u043A\u0430\u0442\u0430\u043D. \u0412\u043E\u0441\u0441\u0442\u0430\u043D\u0430\u0432\u043B\u0438\u0432\u0430\u0442\u044C \u0444\u0430\u0439\u043B\u044B \u043D\u0435 \u043F\u043E\u0442\u0440\u0435\u0431\u043E\u0432\u0430\u043B\u043E\u0441\u044C, \u0437\u0430\u043F\u0440\u043E\u0441 \u0441\u043D\u043E\u0432\u0430 \u0432 \u043F\u043E\u043B\u0435 \u0432\u0432\u043E\u0434\u0430 \u0438 \u0433\u043E\u0442\u043E\u0432 \u043A \u043F\u0440\u0430\u0432\u043A\u0435.",
+    noticePartial: "\u0414\u0438\u0430\u043B\u043E\u0433 \u043E\u0442\u043A\u0430\u0442\u0430\u043D, \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u043E {count} \u0444\u0430\u0439\u043B(\u043E\u0432), \u043D\u043E \u0447\u0430\u0441\u0442\u044C \u043F\u043E\u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0445 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0439 \u043D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0431\u0435\u0437\u043E\u043F\u0430\u0441\u043D\u043E \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C."
   },
   fork: {
     ariaLabel: "\u041E\u0442\u0432\u0435\u0442\u0432\u0438\u0442\u044C \u0440\u0430\u0437\u0433\u043E\u0432\u043E\u0440",
@@ -47111,15 +47214,17 @@ var common9 = {
 };
 var chat9 = {
   rewind: {
-    confirmMessage: "\u56DE\u9000\u5230\u6B64\u5904\uFF1F\u6B64\u6D88\u606F\u4E4B\u540E\u7684\u6587\u4EF6\u66F4\u6539\u5C06\u88AB\u8FD8\u539F\u3002\u56DE\u9000\u4E0D\u4F1A\u5F71\u54CD\u624B\u52A8\u6216\u901A\u8FC7 bash \u7F16\u8F91\u7684\u6587\u4EF6\u3002",
+    confirmMessage: "\u56DE\u9000\u5230\u6B64\u5904\uFF1F\u5F53\u524D\u5BF9\u8BDD\u5728\u6B64\u4E4B\u540E\u7684\u6D88\u606F\u4F1A\u88AB\u4E22\u5F03\uFF0C\u8FD9\u6761\u63D0\u793A\u8BCD\u4F1A\u6062\u590D\u5230\u8F93\u5165\u6846\u4E2D\uFF0C\u5E76\u5728\u53EF\u80FD\u7684\u60C5\u51B5\u4E0B\u6062\u590D\u540E\u7EED\u6587\u4EF6\u6539\u52A8\u3002\u56DE\u9000\u4E0D\u4F1A\u5F71\u54CD\u624B\u52A8\u6216\u901A\u8FC7 bash \u7F16\u8F91\u7684\u6587\u4EF6\u3002",
     confirmButton: "\u56DE\u9000",
     ariaLabel: "\u56DE\u9000\u5230\u6B64\u5904",
-    notice: "\u5DF2\u56DE\u9000\uFF1A\u8FD8\u539F\u4E86 {count} \u4E2A\u6587\u4EF6",
-    noticeSaveFailed: "\u5DF2\u56DE\u9000\uFF1A\u8FD8\u539F\u4E86 {count} \u4E2A\u6587\u4EF6\uFF0C\u4F46\u65E0\u6CD5\u4FDD\u5B58\u72B6\u6001\uFF1A{error}",
+    notice: "\u5DF2\u56DE\u9000\u5F53\u524D\u5BF9\u8BDD\uFF0C\u5E76\u6062\u590D\u4E86 {count} \u4E2A\u6587\u4EF6\u3002\u8FD9\u6761\u63D0\u793A\u8BCD\u5DF2\u56DE\u5230\u8F93\u5165\u6846\uFF0C\u53EF\u7EE7\u7EED\u7F16\u8F91\u3002",
+    noticeSaveFailed: "\u5DF2\u56DE\u9000\u5F53\u524D\u5BF9\u8BDD\uFF08\u6062\u590D\u4E86 {count} \u4E2A\u6587\u4EF6\uFF09\uFF0C\u4F46\u65E0\u6CD5\u4FDD\u5B58\u72B6\u6001\uFF1A{error}",
     failed: "\u56DE\u9000\u5931\u8D25\uFF1A{error}",
     cannot: "\u65E0\u6CD5\u56DE\u9000\uFF1A{error}",
     unavailableStreaming: "\u6D41\u5F0F\u54CD\u5E94\u4E2D\u65E0\u6CD5\u56DE\u9000",
-    unavailableNoUuid: "\u65E0\u6CD5\u56DE\u9000\uFF1A\u7F3A\u5C11\u6D88\u606F\u6807\u8BC6\u7B26"
+    unavailableNoUuid: "\u65E0\u6CD5\u56DE\u9000\uFF1A\u7F3A\u5C11\u6D88\u606F\u6807\u8BC6\u7B26",
+    noticeConversationOnly: "\u5DF2\u56DE\u9000\u5F53\u524D\u5BF9\u8BDD\uFF0C\u6CA1\u6709\u9700\u8981\u6062\u590D\u7684\u6587\u4EF6\u6539\u52A8\uFF0C\u8FD9\u6761\u63D0\u793A\u8BCD\u5DF2\u56DE\u5230\u8F93\u5165\u6846\uFF0C\u53EF\u7EE7\u7EED\u7F16\u8F91\u3002",
+    noticePartial: "\u5DF2\u56DE\u9000\u5F53\u524D\u5BF9\u8BDD\uFF0C\u5E76\u6062\u590D\u4E86 {count} \u4E2A\u6587\u4EF6\uFF0C\u4F46\u90E8\u5206\u540E\u7EED\u6539\u52A8\u65E0\u6CD5\u5B89\u5168\u6062\u590D\u3002"
   },
   fork: {
     ariaLabel: "\u5206\u53C9\u5BF9\u8BDD",
@@ -47426,15 +47531,17 @@ var common10 = {
 };
 var chat10 = {
   rewind: {
-    confirmMessage: "\u56DE\u9000\u5230\u6B64\u8655\uFF1F\u6B64\u8A0A\u606F\u4E4B\u5F8C\u7684\u6A94\u6848\u8B8A\u66F4\u5C07\u88AB\u9084\u539F\u3002\u56DE\u9000\u4E0D\u6703\u5F71\u97FF\u624B\u52D5\u6216\u900F\u904E bash \u7DE8\u8F2F\u7684\u6A94\u6848\u3002",
+    confirmMessage: "\u56DE\u9000\u5230\u6B64\u8655\uFF1F\u76EE\u524D\u5C0D\u8A71\u5728\u6B64\u4E4B\u5F8C\u7684\u8A0A\u606F\u6703\u88AB\u6368\u68C4\uFF0C\u9019\u689D\u63D0\u793A\u8A5E\u6703\u6062\u5FA9\u5230\u8F38\u5165\u6846\u4E2D\uFF0C\u4E26\u5728\u53EF\u80FD\u7684\u60C5\u6CC1\u4E0B\u6062\u5FA9\u5F8C\u7E8C\u6A94\u6848\u6539\u52D5\u3002\u56DE\u9000\u4E0D\u6703\u5F71\u97FF\u624B\u52D5\u6216\u900F\u904E bash \u7DE8\u8F2F\u7684\u6A94\u6848\u3002",
     confirmButton: "\u56DE\u9000",
     ariaLabel: "\u56DE\u9000\u5230\u6B64\u8655",
-    notice: "\u5DF2\u56DE\u9000\uFF1A\u9084\u539F\u4E86 {count} \u500B\u6A94\u6848",
-    noticeSaveFailed: "\u5DF2\u56DE\u9000\uFF1A\u9084\u539F\u4E86 {count} \u500B\u6A94\u6848\uFF0C\u4F46\u7121\u6CD5\u5132\u5B58\u72C0\u614B\uFF1A{error}",
+    notice: "\u5DF2\u56DE\u9000\u76EE\u524D\u5C0D\u8A71\uFF0C\u4E26\u6062\u5FA9\u4E86 {count} \u500B\u6A94\u6848\u3002\u9019\u689D\u63D0\u793A\u8A5E\u5DF2\u56DE\u5230\u8F38\u5165\u6846\uFF0C\u53EF\u7E7C\u7E8C\u7DE8\u8F2F\u3002",
+    noticeSaveFailed: "\u5DF2\u56DE\u9000\u76EE\u524D\u5C0D\u8A71\uFF08\u6062\u5FA9\u4E86 {count} \u500B\u6A94\u6848\uFF09\uFF0C\u4F46\u7121\u6CD5\u5132\u5B58\u72C0\u614B\uFF1A{error}",
     failed: "\u56DE\u9000\u5931\u6557\uFF1A{error}",
     cannot: "\u7121\u6CD5\u56DE\u9000\uFF1A{error}",
     unavailableStreaming: "\u4E32\u6D41\u56DE\u61C9\u4E2D\u7121\u6CD5\u56DE\u9000",
-    unavailableNoUuid: "\u7121\u6CD5\u56DE\u9000\uFF1A\u7F3A\u5C11\u8A0A\u606F\u8B58\u5225\u78BC"
+    unavailableNoUuid: "\u7121\u6CD5\u56DE\u9000\uFF1A\u7F3A\u5C11\u8A0A\u606F\u8B58\u5225\u78BC",
+    noticeConversationOnly: "\u5DF2\u56DE\u9000\u76EE\u524D\u5C0D\u8A71\uFF0C\u6C92\u6709\u9700\u8981\u6062\u5FA9\u7684\u6A94\u6848\u6539\u52D5\uFF0C\u9019\u689D\u63D0\u793A\u8A5E\u5DF2\u56DE\u5230\u8F38\u5165\u6846\uFF0C\u53EF\u7E7C\u7E8C\u7DE8\u8F2F\u3002",
+    noticePartial: "\u5DF2\u56DE\u9000\u76EE\u524D\u5C0D\u8A71\uFF0C\u4E26\u6062\u5FA9\u4E86 {count} \u500B\u6A94\u6848\uFF0C\u4F46\u90E8\u5206\u5F8C\u7E8C\u6539\u52D5\u7121\u6CD5\u5B89\u5168\u6062\u5FA9\u3002"
   },
   fork: {
     ariaLabel: "\u5206\u53C9\u5C0D\u8A71",
@@ -48739,6 +48846,39 @@ function findRewindContext(messages, userIndex) {
     }
   }
   return { prevAssistantUuid, hasResponse };
+}
+function isMutatingToolCall(toolCall) {
+  return toolCall.name === TOOL_WRITE || toolCall.name === TOOL_EDIT || toolCall.name === TOOL_NOTEBOOK_EDIT || toolCall.name === TOOL_BASH;
+}
+function turnExpectsFileRestore(messages, userIndex) {
+  var _a3;
+  for (let i = userIndex + 1; i < messages.length; i++) {
+    const message = messages[i];
+    if (message.role === "user") {
+      break;
+    }
+    if (message.role !== "assistant" || !((_a3 = message.toolCalls) == null ? void 0 : _a3.length)) {
+      continue;
+    }
+    if (message.toolCalls.some(isMutatingToolCall)) {
+      return true;
+    }
+  }
+  return false;
+}
+function collectRewindTurnTargets(messages, userIndex) {
+  const targets = [];
+  for (let i = userIndex; i < messages.length; i++) {
+    const message = messages[i];
+    if (message.role !== "user" || !message.sdkUserUuid) {
+      continue;
+    }
+    targets.push({
+      turnId: message.sdkUserUuid,
+      expectsFileRestore: turnExpectsFileRestore(messages, i)
+    });
+  }
+  return targets;
 }
 
 // src/features/chat/rendering/SubagentRenderer.ts
@@ -50258,7 +50398,7 @@ var _MessageRenderer = class _MessageRenderer {
   isRewindEligible(allMessages, index) {
     if (!allMessages || index === void 0) return false;
     const ctx = findRewindContext(allMessages, index);
-    return !!ctx.prevAssistantUuid && ctx.hasResponse;
+    return ctx.hasResponse && !!ctx.prevAssistantUuid;
   }
   /**
    * Renders an interrupt indicator (stored interrupts from SDK history).
@@ -50882,7 +51022,7 @@ var ConversationController = class {
     }
   }
   async rewind(userMessageId) {
-    var _a3, _b, _c;
+    var _a3, _b;
     const { plugin, state, renderer } = this.deps;
     if (state.isStreaming) {
       new import_obsidian9.Notice(t("chat.rewind.unavailableStreaming"));
@@ -50920,25 +51060,26 @@ var ConversationController = class {
       new import_obsidian9.Notice(t("chat.rewind.failed", { error: "Agent service not available" }));
       return;
     }
+    const rewindTargets = collectRewindTurnTargets(msgs, userIdx);
     let result;
     try {
-      result = await agentService.rewind(userMsg.sdkUserUuid, prevAssistantUuid);
+      result = await agentService.rewind(userMsg.sdkUserUuid, prevAssistantUuid != null ? prevAssistantUuid : "", rewindTargets);
     } catch (e) {
       new import_obsidian9.Notice(t("chat.rewind.failed", { error: e instanceof Error ? e.message : "Unknown error" }));
       return;
     }
-    if (!result.canRewind) {
-      new import_obsidian9.Notice(t("chat.rewind.cannot", { error: (_a3 = result.error) != null ? _a3 : "Unknown error" }));
+    if (!result.conversationRewound) {
+      new import_obsidian9.Notice(t("chat.rewind.failed", { error: (_a3 = result.error) != null ? _a3 : "Unknown error" }));
       return;
     }
     state.truncateAt(userMessageId);
     const inputEl = this.deps.getInputEl();
-    inputEl.value = userMsg.content;
+    inputEl.value = (_b = userMsg.displayContent) != null ? _b : userMsg.content;
     inputEl.focus();
     const welcomeEl = renderer.renderMessages(state.messages, () => this.getGreeting());
     this.deps.setWelcomeEl(welcomeEl);
     this.updateWelcomeVisibility();
-    const filesChanged = (_c = (_b = result.filesChanged) == null ? void 0 : _b.length) != null ? _c : 0;
+    const restoredFileCount = result.restoredFiles.length;
     let saveError = null;
     try {
       await this.save(false, { resumeSessionAt: prevAssistantUuid });
@@ -50946,10 +51087,18 @@ var ConversationController = class {
       saveError = e instanceof Error ? e.message : "Failed to save";
     }
     if (saveError) {
-      new import_obsidian9.Notice(t("chat.rewind.noticeSaveFailed", { count: String(filesChanged), error: saveError }));
+      new import_obsidian9.Notice(t("chat.rewind.noticeSaveFailed", { count: String(restoredFileCount), error: saveError }));
       return;
     }
-    new import_obsidian9.Notice(t("chat.rewind.notice", { count: String(filesChanged) }));
+    if (result.warnings.length > 0) {
+      new import_obsidian9.Notice(t("chat.rewind.noticePartial", { count: String(restoredFileCount) }));
+      return;
+    }
+    if (restoredFileCount === 0) {
+      new import_obsidian9.Notice(t("chat.rewind.noticeConversationOnly"));
+      return;
+    }
+    new import_obsidian9.Notice(t("chat.rewind.notice", { count: String(restoredFileCount) }));
   }
   /**
    * Saves the current conversation.
@@ -60262,7 +60411,7 @@ function countUserMessagesForForkTitle(messages) {
   return messages.filter((m) => m.role === "user" && !m.isInterrupt && !m.isRebuiltContext).length;
 }
 function resolveForkSource(tab, plugin) {
-  var _a3, _b, _c, _d, _e, _f;
+  var _a3, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
   let sourceSessionId = (_b = (_a3 = tab.service) == null ? void 0 : _a3.getSessionId()) != null ? _b : null;
   if (!sourceSessionId && tab.conversationId) {
     const conversation = plugin.getConversationSync(tab.conversationId);
@@ -60273,10 +60422,15 @@ function resolveForkSource(tab, plugin) {
     return null;
   }
   const sourceConversation = tab.conversationId ? plugin.getConversationSync(tab.conversationId) : void 0;
+  const liveCurrentNote = (_i = (_h = (_g = tab.ui.fileContextManager) == null ? void 0 : _g.getCurrentNotePath) == null ? void 0 : _h.call(_g)) != null ? _i : void 0;
+  const liveExternalContextPaths = (_k = (_j = tab.ui.externalContextSelector) == null ? void 0 : _j.getExternalContexts()) != null ? _k : sourceConversation == null ? void 0 : sourceConversation.externalContextPaths;
+  const liveEnabledMcpServers = tab.ui.mcpServerSelector ? Array.from(tab.ui.mcpServerSelector.getEnabledServers()) : sourceConversation == null ? void 0 : sourceConversation.enabledMcpServers;
   return {
     sourceSessionId,
     sourceTitle: sourceConversation == null ? void 0 : sourceConversation.title,
-    currentNote: sourceConversation == null ? void 0 : sourceConversation.currentNote
+    currentNote: liveCurrentNote != null ? liveCurrentNote : sourceConversation == null ? void 0 : sourceConversation.currentNote,
+    externalContextPaths: liveExternalContextPaths && liveExternalContextPaths.length > 0 ? [...liveExternalContextPaths] : void 0,
+    enabledMcpServers: liveEnabledMcpServers && liveEnabledMcpServers.length > 0 ? [...liveEnabledMcpServers] : void 0
   };
 }
 async function handleForkRequest(tab, plugin, userMessageId, forkRequestCallback) {
@@ -60308,7 +60462,9 @@ async function handleForkRequest(tab, plugin, userMessageId, forkRequestCallback
     resumeAt: rewindCtx.prevAssistantUuid,
     sourceTitle: source.sourceTitle,
     forkAtUserMessage: countUserMessagesForForkTitle(msgs.slice(0, userIdx + 1)),
-    currentNote: source.currentNote
+    currentNote: source.currentNote,
+    externalContextPaths: source.externalContextPaths,
+    enabledMcpServers: source.enabledMcpServers
   });
 }
 async function handleForkAll(tab, plugin, forkRequestCallback) {
@@ -60341,7 +60497,9 @@ async function handleForkAll(tab, plugin, forkRequestCallback) {
     resumeAt: lastAssistantUuid,
     sourceTitle: source.sourceTitle,
     forkAtUserMessage: countUserMessagesForForkTitle(msgs) + 1,
-    currentNote: source.currentNote
+    currentNote: source.currentNote,
+    externalContextPaths: source.externalContextPaths,
+    enabledMcpServers: source.enabledMcpServers
   });
 }
 function initializeTabControllers(tab, plugin, component, mcpManager, forkRequestCallback, openConversation) {
@@ -61163,16 +61321,22 @@ var TabManager = class {
     return true;
   }
   async createForkConversation(context) {
+    var _a3, _b;
     const conversation = await this.plugin.createConversation();
     const title = context.sourceTitle ? this.buildForkTitle(context.sourceTitle, context.forkAtUserMessage) : void 0;
     await this.plugin.updateConversation(conversation.id, {
       messages: context.messages,
-      forkSource: { sessionId: context.sourceSessionId, resumeAt: context.resumeAt },
+      forkSource: {
+        sessionId: context.sourceSessionId,
+        ...context.resumeAt ? { resumeAt: context.resumeAt } : {}
+      },
       // Prevent immediate SDK message load from merging duplicates with the copied messages.
       // This is in-memory only (not persisted in metadata).
       sdkMessagesLoaded: true,
       ...title && { title },
-      ...context.currentNote && { currentNote: context.currentNote }
+      ...context.currentNote && { currentNote: context.currentNote },
+      ...((_a3 = context.externalContextPaths) == null ? void 0 : _a3.length) ? { externalContextPaths: context.externalContextPaths } : {},
+      ...((_b = context.enabledMcpServers) == null ? void 0 : _b.length) ? { enabledMcpServers: context.enabledMcpServers } : {}
     });
     return conversation.id;
   }

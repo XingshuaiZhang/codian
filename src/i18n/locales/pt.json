@@ -23,15 +23,17 @@
   },
   "chat": {
     "rewind": {
-      "confirmMessage": "Retroceder até este ponto? As alterações de arquivos após esta mensagem serão revertidas. O retrocesso não afeta arquivos editados manualmente ou via bash.",
+      "confirmMessage": "Retroceder até este ponto? As mensagens posteriores na conversa atual serão descartadas, este prompt voltará para a caixa de entrada e as alterações de arquivos serão restauradas quando possível. Retroceder não afeta arquivos editados manualmente ou via bash.",
       "confirmButton": "Retroceder",
       "ariaLabel": "Retroceder até aqui",
-      "notice": "Retrocedido: {count} arquivo(s) revertido(s)",
-      "noticeSaveFailed": "Retrocedido: {count} arquivo(s) revertido(s), mas não foi possível salvar o estado: {error}",
+      "notice": "Conversa retrocedida e {count} arquivo(s) restaurado(s). O prompt está pronto para edição.",
+      "noticeSaveFailed": "Conversa retrocedida ({count} arquivo(s) restaurado(s)), mas não foi possível salvar o estado: {error}",
       "failed": "Falha ao retroceder: {error}",
       "cannot": "Não é possível retroceder: {error}",
       "unavailableStreaming": "Não é possível retroceder durante a transmissão",
-      "unavailableNoUuid": "Não é possível retroceder: identificadores de mensagem ausentes"
+      "unavailableNoUuid": "Não é possível retroceder: identificadores de mensagem ausentes",
+      "noticeConversationOnly": "Conversa retrocedida. Não havia alterações de arquivo para restaurar, e o prompt está pronto para edição.",
+      "noticePartial": "Conversa retrocedida e {count} arquivo(s) restaurado(s), mas algumas alterações posteriores não puderam ser restauradas com segurança."
     },
     "fork": {
       "ariaLabel": "Bifurcar conversa",

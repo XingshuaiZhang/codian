@@ -100,6 +100,57 @@ describe('CodianService integration', () => {
     return getLastMockCodexAcpRuntime();
   }
 
+  function mockGitRepoSnapshot(
+    headFiles: Record<string, string>,
+    options?: {
+      dirtyPaths?: string[];
+      untrackedPaths?: string[];
+    },
+  ): void {
+    execFileSyncMock.mockImplementation((command, args, execOptions) => {
+      if (command !== 'git') {
+        throw new Error(`Unexpected command: ${String(command)}`);
+      }
+
+      const argv = (args ?? []) as string[];
+      const encoding = (execOptions as { encoding?: string } | undefined)?.encoding;
+      const asBuffer = encoding === 'buffer';
+      const output = (value: string) => (asBuffer ? Buffer.from(value, 'utf8') : value) as never;
+      const hasHeadFile = (relativePath: string) => Object.prototype.hasOwnProperty.call(headFiles, relativePath);
+      const dirtyPaths = options?.dirtyPaths ?? [];
+      const untrackedPaths = options?.untrackedPaths ?? [];
+
+      if (argv[0] === 'rev-parse' && argv[1] === '--show-toplevel') {
+        return output(`${vaultPath}\n`);
+      }
+      if (argv[0] === 'rev-parse' && argv[1] === '--verify' && argv[2] === 'HEAD') {
+        return output('HEAD\n');
+      }
+      if (argv[0] === 'diff' && argv[1] === '--name-only') {
+        return output(dirtyPaths.length > 0 ? `${dirtyPaths.join('\0')}\0` : '');
+      }
+      if (argv[0] === 'ls-files' && argv[1] === '--others') {
+        return output(untrackedPaths.length > 0 ? `${untrackedPaths.join('\0')}\0` : '');
+      }
+      if (argv[0] === 'cat-file' && argv[1] === '-e') {
+        const relativePath = argv[2].replace(/^HEAD:/, '');
+        if (hasHeadFile(relativePath)) {
+          return output('');
+        }
+        throw new Error(`fatal: path '${relativePath}' does not exist in HEAD`);
+      }
+      if (argv[0] === 'show') {
+        const relativePath = argv[1].replace(/^HEAD:/, '');
+        if (!hasHeadFile(relativePath)) {
+          throw new Error(`fatal: path '${relativePath}' does not exist in HEAD`);
+        }
+        return output(headFiles[relativePath]);
+      }
+
+      throw new Error(`Unexpected git command: ${argv.join(' ')}`);
+    });
+  }
+
   it('streams incremental agent text and usage from ACP session updates', async () => {
     const runtime = await getReadyRuntime();
     runtime.sessionId = 'thread-stream';
@@ -170,12 +221,84 @@ describe('CodianService integration', () => {
     expect(turnIdChunk).toBeDefined();
     expect(fs.existsSync(absolutePath)).toBe(true);
 
-    const manifestPath = path.join(vaultPath, '.codex', 'obsidian', 'rewind', turnIdChunk!.uuid, 'manifest.json');
+    const manifestPath = path.join(vaultPath, '.codian', 'obsidian', 'rewind', turnIdChunk!.uuid, 'manifest.json');
     expect(fs.existsSync(manifestPath)).toBe(true);
 
     const rewindResult = await service.rewind(turnIdChunk!.uuid, '');
-    expect(rewindResult.canRewind).toBe(true);
-    expect(rewindResult.filesChanged).toContain(absolutePath);
+    expect(rewindResult.conversationRewound).toBe(true);
+    expect(rewindResult.restoredFiles).toContain(absolutePath);
+    expect(fs.existsSync(absolutePath)).toBe(false);
+  });
+
+  it('restores bash-updated files when ACP reports changed locations and git history is available', async () => {
+    const runtime = await getReadyRuntime();
+    runtime.sessionId = 'thread-bash-existing';
+
+    const relativePath = path.join('notes', 'existing.md');
+    const absolutePath = path.join(vaultPath, relativePath);
+    await fs.promises.mkdir(path.dirname(absolutePath), { recursive: true });
+    await fs.promises.writeFile(absolutePath, 'before');
+    mockGitRepoSnapshot({ [relativePath.replace(/\\/g, '/')]: 'before' });
+
+    runtime.__setPromptImpl(async () => {
+      await fs.promises.writeFile(absolutePath, 'after');
+      await runtime.__emit({
+        sessionUpdate: 'tool_call_update',
+        toolCallId: 'bash-1',
+        kind: 'execute',
+        title: 'Run shell update',
+        status: 'completed',
+        locations: [{ path: relativePath }],
+        rawInput: { parsed_cmd: [{ cmd: `python update ${relativePath}` }] },
+        rawOutput: { aggregated_output: 'updated', exit_code: 0 },
+      } as any);
+      return { stopReason: 'end_turn' } as any;
+    });
+
+    const chunks = await collectChunks(service.query('update note'));
+    const turnIdChunk = chunks.find((chunk): chunk is Extract<StreamChunk, { type: 'sdk_user_uuid' }> => chunk.type === 'sdk_user_uuid');
+    expect(turnIdChunk).toBeDefined();
+
+    const rewindResult = await service.rewind(turnIdChunk!.uuid, '');
+    expect(rewindResult.conversationRewound).toBe(true);
+    expect(rewindResult.restoredFiles).toContain(absolutePath);
+    expect(rewindResult.warnings).toEqual([]);
+    expect(await fs.promises.readFile(absolutePath, 'utf8')).toBe('before');
+  });
+
+  it('removes bash-created files when ACP reports changed locations and git history shows they were new', async () => {
+    const runtime = await getReadyRuntime();
+    runtime.sessionId = 'thread-bash-add';
+
+    const relativePath = path.join('notes', 'new-from-bash.md');
+    const absolutePath = path.join(vaultPath, relativePath);
+    mockGitRepoSnapshot({});
+
+    runtime.__setPromptImpl(async () => {
+      await fs.promises.mkdir(path.dirname(absolutePath), { recursive: true });
+      await fs.promises.writeFile(absolutePath, 'created');
+      await runtime.__emit({
+        sessionUpdate: 'tool_call_update',
+        toolCallId: 'bash-1',
+        kind: 'execute',
+        title: 'Create file',
+        status: 'completed',
+        locations: [{ path: relativePath }],
+        rawInput: { parsed_cmd: [{ cmd: `touch ${relativePath}` }] },
+        rawOutput: { aggregated_output: 'created', exit_code: 0 },
+      } as any);
+      return { stopReason: 'end_turn' } as any;
+    });
+
+    const chunks = await collectChunks(service.query('create note'));
+    const turnIdChunk = chunks.find((chunk): chunk is Extract<StreamChunk, { type: 'sdk_user_uuid' }> => chunk.type === 'sdk_user_uuid');
+    expect(turnIdChunk).toBeDefined();
+    expect(fs.existsSync(absolutePath)).toBe(true);
+
+    const rewindResult = await service.rewind(turnIdChunk!.uuid, '');
+    expect(rewindResult.conversationRewound).toBe(true);
+    expect(rewindResult.restoredFiles).toContain(absolutePath);
+    expect(rewindResult.warnings).toEqual([]);
     expect(fs.existsSync(absolutePath)).toBe(false);
   });
 
@@ -212,8 +335,13 @@ describe('CodianService integration', () => {
 
     const rewindResult = await service.rewind(turnIdChunk!.uuid, '');
     expect(rewindResult).toEqual({
-      canRewind: false,
-      error: 'This turn used opaque side effects and cannot be safely rewound.',
+      conversationRewound: true,
+      restoredFiles: [],
+      missingArtifacts: [],
+      unsafeTurns: [turnIdChunk!.uuid],
+      warnings: [`Turn ${turnIdChunk!.uuid} used opaque side effects and its file changes were not restored.`],
+      insertions: 0,
+      deletions: 0,
     });
   });
 

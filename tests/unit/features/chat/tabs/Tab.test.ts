@@ -135,6 +135,7 @@ const createMockExternalContextSelector = () => ({
 const createMockMcpServerSelector = () => ({
   setMcpManager: jest.fn(),
   addMentionedServers: jest.fn(),
+  getEnabledServers: jest.fn().mockReturnValue(new Set()),
 });
 
 const createMockPermissionToggle = () => ({});
@@ -2278,6 +2279,8 @@ describe('Tab - handleForkRequest', () => {
       getConversationSync: jest.fn().mockReturnValue({
         title: 'My Conversation',
         currentNote: 'notes/test.md',
+        externalContextPaths: ['/persisted/context'],
+        enabledMcpServers: ['persisted-mcp'],
       }),
     });
     const { tab, forkCallback, forkRequestCallback } = setupForkTest({ plugin });
@@ -2295,6 +2298,8 @@ describe('Tab - handleForkRequest', () => {
       getSessionId: jest.fn().mockReturnValue('session-abc'),
     } as any;
     tab.conversationId = 'conv-1';
+    mockExternalContextSelector.getExternalContexts.mockReturnValue(['/live/context']);
+    mockMcpServerSelector.getEnabledServers.mockReturnValue(new Set(['live-mcp']));
 
     await forkCallback('u2');
 
@@ -2303,6 +2308,8 @@ describe('Tab - handleForkRequest', () => {
       resumeAt: 'asst-1', // prev assistant UUID before u2
       sourceTitle: 'My Conversation',
       currentNote: 'notes/test.md',
+      externalContextPaths: ['/live/context'],
+      enabledMcpServers: ['live-mcp'],
       forkAtUserMessage: 2, // u2 is the 2nd user message
     }));
 
@@ -2359,7 +2366,7 @@ describe('Tab - handleForkRequest', () => {
     expect(ctx.messages[0]).toEqual(originalMsg);
   });
 
-  it('should fork at first user message with empty messages before fork', async () => {
+  it('should not fork at first user message without a previous assistant UUID', async () => {
     const plugin = createMockPlugin({
       getConversationSync: jest.fn().mockReturnValue({ title: 'First Fork' }),
     });
@@ -2374,9 +2381,8 @@ describe('Tab - handleForkRequest', () => {
 
     await forkCallback('u1');
 
-    // No assistant message before u1, so findRewindContext returns no prevAssistantUuid
     expect(forkRequestCallback).not.toHaveBeenCalled();
-    expect(mockNotice).toHaveBeenCalled();
+    expect(Notice).toHaveBeenCalled();
   });
 
   it('should fall back to conversation forkSource.sessionId when no sessionId or sdkSessionId', async () => {

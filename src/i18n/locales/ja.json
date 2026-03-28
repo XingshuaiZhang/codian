@@ -23,15 +23,17 @@
   },
   "chat": {
     "rewind": {
-      "confirmMessage": "この時点に巻き戻しますか？このメッセージ以降のファイル変更が元に戻されます。手動またはbashで編集されたファイルには影響しません。",
+      "confirmMessage": "ここまで巻き戻しますか？現在の会話でこの後のメッセージは破棄され、このプロンプトは入力欄に戻り、可能な範囲で後続のファイル変更も復元されます。巻き戻しは手動または bash で編集したファイルには影響しません。",
       "confirmButton": "巻き戻す",
       "ariaLabel": "ここに巻き戻す",
-      "notice": "巻き戻し完了：{count} 個のファイルを復元",
-      "noticeSaveFailed": "巻き戻し完了：{count} 個のファイルを復元しましたが、状態を保存できませんでした：{error}",
+      "notice": "会話を巻き戻し、{count} 件のファイルを復元しました。プロンプトは編集できる状態です。",
+      "noticeSaveFailed": "会話を巻き戻しました（{count} 件のファイルを復元）が、状態を保存できませんでした：{error}",
       "failed": "巻き戻しに失敗：{error}",
       "cannot": "巻き戻しできません：{error}",
       "unavailableStreaming": "ストリーミング中は巻き戻しできません",
-      "unavailableNoUuid": "巻き戻しできません：メッセージ識別子がありません"
+      "unavailableNoUuid": "巻き戻しできません：メッセージ識別子がありません",
+      "noticeConversationOnly": "会話を巻き戻しました。復元が必要なファイル変更はなく、プロンプトは編集できる状態です。",
+      "noticePartial": "会話を巻き戻し、{count} 件のファイルを復元しましたが、一部の後続変更は安全に復元できませんでした。"
     },
     "fork": {
       "ariaLabel": "会話を分岐",

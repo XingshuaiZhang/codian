@@ -8,7 +8,7 @@ import type { SubagentInfo, SubagentMode, ToolCallInfo } from './tools';
 /** Fork origin reference: identifies the source session and resume point. */
 export interface ForkSource {
   sessionId: string;
-  resumeAt: string;
+  resumeAt?: string;
 }
 
 /** View type identifier for Obsidian. */

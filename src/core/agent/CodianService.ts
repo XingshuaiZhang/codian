@@ -81,11 +81,19 @@ export interface EnsureReadyOptions {
 }
 
 export interface RewindFilesResult {
-  canRewind: boolean;
-  filesChanged?: string[];
+  conversationRewound: boolean;
+  restoredFiles: string[];
+  missingArtifacts: string[];
+  unsafeTurns: string[];
+  warnings: string[];
   insertions?: number;
   deletions?: number;
   error?: string;
+}
+
+interface RewindTurnSpec {
+  turnId: string;
+  expectsFileRestore: boolean;
 }
 
 interface TurnBackupEntry {
@@ -158,6 +166,9 @@ function buildPermissionPreamble(mode: string): string | null {
   }
   return null;
 }
+
+const CODIAN_PRIVATE_DIR = ['.codian', 'obsidian'] as const;
+const LEGACY_PRIVATE_DIR = ['.codex', 'obsidian'] as const;
 
 export class CodianService {
   private plugin: CodianPlugin;
@@ -758,10 +769,60 @@ export class CodianService {
       return;
     }
 
+    await this.prepareAcpUpdateForTurn(update);
+
     const chunks = this.mapAcpUpdateToChunks(params.sessionId, update);
     for (const chunk of chunks) {
       await this.prepareChunkForTurn(chunk);
       this.pushTurnChunk(chunk);
+    }
+  }
+
+  private async prepareAcpUpdateForTurn(update: acp.SessionNotification['update']): Promise<void> {
+    if (update.sessionUpdate !== 'tool_call' && update.sessionUpdate !== 'tool_call_update') {
+      return;
+    }
+
+    const artifact = this.activeTurnArtifact;
+    if (!artifact) {
+      return;
+    }
+
+    const toolName = this.getToolNameFromAcpUpdate(update);
+    const isMutatingTool = toolName === TOOL_WRITE
+      || toolName === TOOL_EDIT
+      || toolName === TOOL_NOTEBOOK_EDIT
+      || toolName === TOOL_BASH;
+    if (!isMutatingTool) {
+      return;
+    }
+
+    const isCompleted = update.status === 'completed' || update.status === 'failed';
+    if (!isCompleted) {
+      return;
+    }
+
+    const input = this.getToolInputFromAcpUpdate(update);
+    const hasDirectPath = !!getPathFromToolInput(toolName, input);
+    const locations = Array.isArray(update.locations)
+      ? Array.from(new Set(update.locations
+        .map((location) => (typeof location.path === 'string' ? location.path : ''))
+        .filter(Boolean)))
+      : [];
+
+    if (toolName !== TOOL_BASH && hasDirectPath) {
+      return;
+    }
+
+    if (locations.length === 0) {
+      if (toolName === TOOL_BASH || !hasDirectPath) {
+        artifact.opaqueSideEffects = true;
+      }
+      return;
+    }
+
+    for (const filePath of locations) {
+      await this.backfillBackupForChangedFile(artifact, this.activeTurnGitSnapshot, filePath);
     }
   }
 
@@ -935,8 +996,6 @@ export class CodianService {
     if (chunk.type === 'tool_use') {
       if (chunk.name === TOOL_WRITE || chunk.name === TOOL_EDIT || chunk.name === TOOL_NOTEBOOK_EDIT) {
         await this.backupFileForTurn(artifact, chunk.name, chunk.input);
-      } else if (chunk.name === TOOL_BASH) {
-        artifact.opaqueSideEffects = true;
       }
     }
 
@@ -954,7 +1013,7 @@ export class CodianService {
       return [];
     }
 
-    const baseDir = path.join(this.getVaultPath(), '.codex', 'obsidian', 'tmp', 'images', turnId);
+    const baseDir = path.join(this.getVaultPath(), ...CODIAN_PRIVATE_DIR, 'tmp', 'images', turnId);
     await fs.promises.mkdir(baseDir, { recursive: true });
 
     const written: string[] = [];
@@ -971,8 +1030,9 @@ export class CodianService {
     return written;
   }
 
-  private getTurnArtifactDir(turnId: string): string {
-    return path.join(this.getVaultPath(), '.codex', 'obsidian', 'rewind', turnId);
+  private getTurnArtifactDir(turnId: string, legacy = false): string {
+    const privateDir = legacy ? LEGACY_PRIVATE_DIR : CODIAN_PRIVATE_DIR;
+    return path.join(this.getVaultPath(), ...privateDir, 'rewind', turnId);
   }
 
   private async backupFileForTurn(
@@ -982,7 +1042,6 @@ export class CodianService {
   ): Promise<void> {
     const filePath = getPathFromToolInput(toolName, input);
     if (!filePath) {
-      artifact.opaqueSideEffects = true;
       return;
     }
 
@@ -1026,13 +1085,21 @@ export class CodianService {
   }
 
   private async loadTurnArtifact(turnId: string): Promise<TurnArtifact | null> {
-    const manifestPath = path.join(this.getTurnArtifactDir(turnId), 'manifest.json');
-    try {
-      const raw = await fs.promises.readFile(manifestPath, 'utf8');
-      return JSON.parse(raw) as TurnArtifact;
-    } catch {
-      return null;
+    const manifestPaths = [
+      path.join(this.getTurnArtifactDir(turnId), 'manifest.json'),
+      path.join(this.getTurnArtifactDir(turnId, true), 'manifest.json'),
+    ];
+
+    for (const manifestPath of manifestPaths) {
+      try {
+        const raw = await fs.promises.readFile(manifestPath, 'utf8');
+        return JSON.parse(raw) as TurnArtifact;
+      } catch {
+        // Try the next candidate path.
+      }
     }
+
+    return null;
   }
 
   private async restoreTurnArtifact(artifact: TurnArtifact): Promise<void> {
@@ -1105,9 +1172,34 @@ export class CodianService {
         .filter(Boolean)
         .forEach(entry => dirtyPaths.add(entry.replace(/\\/g, '/')));
 
+      const ignored = execFileSync('git', ['ls-files', '--others', '--ignored', '--exclude-standard', '-z'], {
+        cwd: repoRoot,
+        encoding: 'buffer',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      });
+
+      ignored
+        .toString('utf8')
+        .split('\0')
+        .map(entry => entry.trim())
+        .filter(Boolean)
+        .forEach(entry => dirtyPaths.add(entry.replace(/\\/g, '/')));
+
       return { repoRoot, hasHead, dirtyPaths };
     } catch {
       return null;
+    }
+  }
+
+  private pathExistsInGitHead(repoRoot: string, relativePath: string): boolean {
+    try {
+      execFileSync('git', ['cat-file', '-e', `HEAD:${relativePath}`], {
+        cwd: repoRoot,
+        stdio: ['ignore', 'ignore', 'ignore'],
+      });
+      return true;
+    } catch {
+      return false;
     }
   }
 
@@ -1115,7 +1207,6 @@ export class CodianService {
     artifact: TurnArtifact,
     snapshot: GitRewindSnapshot | null,
     filePath: string,
-    changeKind: string | undefined,
   ): Promise<void> {
     if (!filePath) {
       artifact.opaqueSideEffects = true;
@@ -1134,14 +1225,6 @@ export class CodianService {
     artifact.filesChanged.push(absolute);
     await fs.promises.mkdir(this.getTurnArtifactDir(artifact.turnId), { recursive: true });
 
-    if (changeKind === 'add') {
-      artifact.backups.push({
-        originalPath: absolute,
-        existedBefore: false,
-      });
-      return;
-    }
-
     if (!snapshot) {
       artifact.opaqueSideEffects = true;
       return;
@@ -1153,6 +1236,15 @@ export class CodianService {
 
     if (!canRestoreFromGit) {
       artifact.opaqueSideEffects = true;
+      return;
+    }
+
+    const existedInHead = this.pathExistsInGitHead(snapshot.repoRoot, relativePath);
+    if (!existedInHead) {
+      artifact.backups.push({
+        originalPath: absolute,
+        existedBefore: false,
+      });
       return;
     }
 
@@ -1331,26 +1423,64 @@ export class CodianService {
   }
 
   async rewindFiles(sdkUserUuid: string, _dryRun?: boolean): Promise<RewindFilesResult> {
-    return this.rewind(sdkUserUuid, '');
+    return this.rewind(sdkUserUuid, '', [{ turnId: sdkUserUuid, expectsFileRestore: true }]);
   }
 
-  async rewind(sdkUserUuid: string, _sdkAssistantUuid: string): Promise<RewindFilesResult> {
-    const artifact = await this.loadTurnArtifact(sdkUserUuid);
-    if (!artifact) {
-      return { canRewind: false, error: 'No rewind data is available for this turn.' };
+  async rewind(
+    sdkUserUuid: string,
+    sdkAssistantUuid: string,
+    turnSpecs?: RewindTurnSpec[],
+  ): Promise<RewindFilesResult> {
+    const rewindTurns = turnSpecs && turnSpecs.length > 0
+      ? turnSpecs
+      : [{ turnId: sdkUserUuid, expectsFileRestore: true }];
+    const restoredFiles = new Set<string>();
+    const missingArtifacts: string[] = [];
+    const unsafeTurns: string[] = [];
+    const warnings: string[] = [];
+
+    try {
+      for (const turn of [...rewindTurns].reverse()) {
+        const artifact = await this.loadTurnArtifact(turn.turnId);
+        if (!artifact) {
+          if (turn.expectsFileRestore) {
+            missingArtifacts.push(turn.turnId);
+            warnings.push(`No rewind data is available for turn ${turn.turnId}.`);
+          }
+          continue;
+        }
+
+        if (artifact.opaqueSideEffects) {
+          unsafeTurns.push(turn.turnId);
+          warnings.push(`Turn ${turn.turnId} used opaque side effects and its file changes were not restored.`);
+          continue;
+        }
+
+        await this.restoreTurnArtifact(artifact);
+        for (const filePath of artifact.filesChanged) {
+          restoredFiles.add(filePath);
+        }
+      }
+    } catch (error) {
+      return {
+        conversationRewound: false,
+        restoredFiles: Array.from(restoredFiles),
+        missingArtifacts,
+        unsafeTurns,
+        warnings,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
     }
 
-    if (artifact.opaqueSideEffects) {
-      return { canRewind: false, error: 'This turn used opaque side effects and cannot be safely rewound.' };
-    }
-
-    await this.restoreTurnArtifact(artifact);
     this.sessionManager.invalidateSession();
-    this.pendingResumeAt = sdkUserUuid;
+    this.pendingResumeAt = sdkAssistantUuid || undefined;
 
     return {
-      canRewind: true,
-      filesChanged: artifact.filesChanged,
+      conversationRewound: true,
+      restoredFiles: Array.from(restoredFiles),
+      missingArtifacts,
+      unsafeTurns,
+      warnings,
       insertions: 0,
       deletions: 0,
     };

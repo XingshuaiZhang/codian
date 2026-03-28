@@ -23,15 +23,17 @@
   },
   "chat": {
     "rewind": {
-      "confirmMessage": "¿Rebobinar a este punto? Los cambios de archivos después de este mensaje serán revertidos. El rebobinado no afecta archivos editados manualmente o mediante bash.",
+      "confirmMessage": "¿Rebobinar hasta este punto? Los mensajes posteriores de la conversación actual se descartarán, este prompt volverá al cuadro de entrada y los cambios de archivos se restaurarán cuando sea posible. Rebobinar no afecta a los archivos editados manualmente o mediante bash.",
       "confirmButton": "Rebobinar",
       "ariaLabel": "Rebobinar hasta aquí",
-      "notice": "Rebobinado: {count} archivo(s) revertido(s)",
-      "noticeSaveFailed": "Rebobinado: {count} archivo(s) revertido(s), pero no se pudo guardar el estado: {error}",
+      "notice": "Se rebobinó la conversación y se restauraron {count} archivo(s). El prompt está listo para editarse.",
+      "noticeSaveFailed": "Se rebobinó la conversación (se restauraron {count} archivo(s)), pero no se pudo guardar el estado: {error}",
       "failed": "Error al rebobinar: {error}",
       "cannot": "No se puede rebobinar: {error}",
       "unavailableStreaming": "No se puede rebobinar durante la transmisión",
-      "unavailableNoUuid": "No se puede rebobinar: faltan identificadores de mensaje"
+      "unavailableNoUuid": "No se puede rebobinar: faltan identificadores de mensaje",
+      "noticeConversationOnly": "Se rebobinó la conversación. No había cambios de archivos que restaurar y el prompt está listo para editarse.",
+      "noticePartial": "Se rebobinó la conversación y se restauraron {count} archivo(s), pero algunos cambios posteriores no pudieron restaurarse de forma segura."
     },
     "fork": {
       "ariaLabel": "Bifurcar conversación",

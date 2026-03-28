@@ -476,8 +476,13 @@ describe('CodianService', () => {
     const result = await service.rewind('missing-turn', '');
 
     expect(result).toEqual({
-      canRewind: false,
-      error: 'No rewind data is available for this turn.',
+      conversationRewound: true,
+      restoredFiles: [],
+      missingArtifacts: ['missing-turn'],
+      unsafeTurns: [],
+      warnings: ['No rewind data is available for turn missing-turn.'],
+      insertions: 0,
+      deletions: 0,
     });
   });
 
@@ -486,7 +491,7 @@ describe('CodianService', () => {
     await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
     await fs.promises.writeFile(filePath, 'new content');
 
-    const manifestDir = path.join(vaultPath, '.codex', 'obsidian', 'rewind', 'turn-1');
+    const manifestDir = path.join(vaultPath, '.codian', 'obsidian', 'rewind', 'turn-1');
     await fs.promises.mkdir(manifestDir, { recursive: true });
     await fs.promises.writeFile(path.join(manifestDir, 'manifest.json'), JSON.stringify({
       turnId: 'turn-1',
@@ -498,16 +503,18 @@ describe('CodianService', () => {
     }));
 
     service.setSessionId('session-1');
-    const result = await service.rewind('turn-1', '');
+    const result = await service.rewind('turn-1', 'assistant-prev');
 
-    expect(result.canRewind).toBe(true);
+    expect(result.conversationRewound).toBe(true);
+    expect(result.restoredFiles).toEqual([filePath]);
+    expect(result.warnings).toEqual([]);
     expect(fs.existsSync(filePath)).toBe(false);
     expect(service.getSessionId()).toBeNull();
     expect(service.consumeSessionInvalidation()).toBe(true);
   });
 
-  it('refuses to rewind opaque side effects', async () => {
-    const manifestDir = path.join(vaultPath, '.codex', 'obsidian', 'rewind', 'turn-opaque');
+  it('allows conversation rewind when later file changes are opaque', async () => {
+    const manifestDir = path.join(vaultPath, '.codian', 'obsidian', 'rewind', 'turn-opaque');
     await fs.promises.mkdir(manifestDir, { recursive: true });
     await fs.promises.writeFile(path.join(manifestDir, 'manifest.json'), JSON.stringify({
       turnId: 'turn-opaque',
@@ -521,8 +528,82 @@ describe('CodianService', () => {
     const result = await service.rewind('turn-opaque', '');
 
     expect(result).toEqual({
-      canRewind: false,
-      error: 'This turn used opaque side effects and cannot be safely rewound.',
+      conversationRewound: true,
+      restoredFiles: [],
+      missingArtifacts: [],
+      unsafeTurns: ['turn-opaque'],
+      warnings: ['Turn turn-opaque used opaque side effects and its file changes were not restored.'],
+      insertions: 0,
+      deletions: 0,
     });
+  });
+
+  it('loads legacy rewind artifacts from .codex/obsidian/rewind', async () => {
+    const filePath = path.join(vaultPath, 'notes', 'legacy.md');
+    await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
+    await fs.promises.writeFile(filePath, 'legacy content');
+
+    const manifestDir = path.join(vaultPath, '.codex', 'obsidian', 'rewind', 'turn-legacy');
+    await fs.promises.mkdir(manifestDir, { recursive: true });
+    await fs.promises.writeFile(path.join(manifestDir, 'manifest.json'), JSON.stringify({
+      turnId: 'turn-legacy',
+      sessionId: 'session-1',
+      filesChanged: [filePath],
+      backups: [{ originalPath: filePath, existedBefore: false }],
+      opaqueSideEffects: false,
+      createdAt: Date.now(),
+    }));
+
+    const result = await service.rewind('turn-legacy', '');
+
+    expect(result.conversationRewound).toBe(true);
+    expect(result.restoredFiles).toEqual([filePath]);
+    expect(fs.existsSync(filePath)).toBe(false);
+  });
+
+  it('restores later turn artifacts before earlier ones for the same file', async () => {
+    const filePath = path.join(vaultPath, 'notes', 'shared.md');
+    const firstManifestDir = path.join(vaultPath, '.codian', 'obsidian', 'rewind', 'turn-1');
+    const secondManifestDir = path.join(vaultPath, '.codian', 'obsidian', 'rewind', 'turn-2');
+    await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
+    await fs.promises.mkdir(firstManifestDir, { recursive: true });
+    await fs.promises.mkdir(secondManifestDir, { recursive: true });
+
+    await fs.promises.writeFile(filePath, 'after-second-turn');
+    await fs.promises.writeFile(path.join(firstManifestDir, 'backup-0'), 'before-first-turn');
+    await fs.promises.writeFile(path.join(secondManifestDir, 'backup-0'), 'after-first-turn');
+
+    await fs.promises.writeFile(path.join(firstManifestDir, 'manifest.json'), JSON.stringify({
+      turnId: 'turn-1',
+      sessionId: 'session-1',
+      filesChanged: [filePath],
+      backups: [{
+        originalPath: filePath,
+        backupPath: path.join(firstManifestDir, 'backup-0'),
+        existedBefore: true,
+      }],
+      opaqueSideEffects: false,
+      createdAt: Date.now(),
+    }));
+    await fs.promises.writeFile(path.join(secondManifestDir, 'manifest.json'), JSON.stringify({
+      turnId: 'turn-2',
+      sessionId: 'session-1',
+      filesChanged: [filePath],
+      backups: [{
+        originalPath: filePath,
+        backupPath: path.join(secondManifestDir, 'backup-0'),
+        existedBefore: true,
+      }],
+      opaqueSideEffects: false,
+      createdAt: Date.now(),
+    }));
+
+    const result = await service.rewind('turn-1', '', [
+      { turnId: 'turn-1', expectsFileRestore: true },
+      { turnId: 'turn-2', expectsFileRestore: true },
+    ]);
+
+    expect(result.conversationRewound).toBe(true);
+    expect(await fs.promises.readFile(filePath, 'utf8')).toBe('before-first-turn');
   });
 });

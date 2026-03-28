@@ -36,6 +36,8 @@ export type TranslationKey =
   | 'chat.rewind.confirmButton'
   | 'chat.rewind.ariaLabel'
   | 'chat.rewind.notice'
+  | 'chat.rewind.noticeConversationOnly'
+  | 'chat.rewind.noticePartial'
   | 'chat.rewind.noticeSaveFailed'
   | 'chat.rewind.failed'
   | 'chat.rewind.cannot'

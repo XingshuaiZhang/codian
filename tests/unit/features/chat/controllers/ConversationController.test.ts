@@ -1989,7 +1989,13 @@ describe('ConversationController - Rewind', () => {
       getSessionId: jest.fn().mockReturnValue(null),
       setSessionId: jest.fn(),
       consumeSessionInvalidation: jest.fn().mockReturnValue(false),
-      rewind: jest.fn().mockResolvedValue({ canRewind: true, filesChanged: ['a.ts'] }),
+      rewind: jest.fn().mockResolvedValue({
+        conversationRewound: true,
+        restoredFiles: ['a.ts'],
+        missingArtifacts: [],
+        unsafeTurns: [],
+        warnings: [],
+      }),
     };
     deps = createMockDeps({
       getAgentService: () => mockAgentService,
@@ -2009,7 +2015,11 @@ describe('ConversationController - Rewind', () => {
 
     await controller.rewind('m3');
 
-    expect(mockAgentService.rewind).toHaveBeenCalledWith('user-uuid', 'prev-a');
+    expect(mockAgentService.rewind).toHaveBeenCalledWith(
+      'user-uuid',
+      'prev-a',
+      [{ turnId: 'user-uuid', expectsFileRestore: false }],
+    );
   });
 
   it('should show Notice when message ID not found', async () => {
@@ -2052,7 +2062,8 @@ describe('ConversationController - Rewind', () => {
     expect(mockAgentService.rewind).not.toHaveBeenCalled();
   });
 
-  it('should show Notice when no previous assistant with uuid exists', async () => {
+  it('should reject rewinding the first user message without a previous assistant UUID', async () => {
+    deps.state.currentConversationId = 'conv-1';
     deps.state.messages = [
       { id: 'm1', role: 'user', content: 'test', timestamp: 1, sdkUserUuid: 'u1' },
       { id: 'm2', role: 'assistant', content: '', timestamp: 2, sdkAssistantUuid: 'a1' },
@@ -2060,8 +2071,9 @@ describe('ConversationController - Rewind', () => {
 
     await controller.rewind('m1');
 
-    expect(mockNotice).toHaveBeenCalled();
     expect(mockAgentService.rewind).not.toHaveBeenCalled();
+    expect(deps.plugin.updateConversation).not.toHaveBeenCalled();
+    expect(mockNotice).toHaveBeenCalled();
   });
 
   it('should show Notice when no response assistant with uuid exists', async () => {
@@ -2099,7 +2111,14 @@ describe('ConversationController - Rewind', () => {
       { id: 'm2', role: 'user', content: 'test', timestamp: 2, sdkUserUuid: 'u1' },
       { id: 'm3', role: 'assistant', content: '', timestamp: 3, sdkAssistantUuid: 'a2' },
     ];
-    mockAgentService.rewind.mockResolvedValue({ canRewind: false, error: 'No checkpoints' });
+    mockAgentService.rewind.mockResolvedValue({
+      conversationRewound: false,
+      restoredFiles: [],
+      missingArtifacts: [],
+      unsafeTurns: [],
+      warnings: [],
+      error: 'No checkpoints',
+    });
 
     await controller.rewind('m2');
 
@@ -2120,7 +2139,11 @@ describe('ConversationController - Rewind', () => {
 
     await controller.rewind('m2');
 
-    expect(mockAgentService.rewind).toHaveBeenCalledWith('user-uuid', 'prev-a');
+    expect(mockAgentService.rewind).toHaveBeenCalledWith(
+      'user-uuid',
+      'prev-a',
+      [{ turnId: 'user-uuid', expectsFileRestore: false }],
+    );
     expect(truncateSpy).toHaveBeenCalledWith('m2');
     expect(deps.renderer.renderMessages).toHaveBeenCalledWith(
       expect.any(Array),
@@ -2188,8 +2211,103 @@ describe('ConversationController - Rewind', () => {
 
     await controller.rewind('m2');
 
-    expect(mockAgentService.rewind).toHaveBeenCalledWith('user-uuid', 'prev-a');
+    expect(mockAgentService.rewind).toHaveBeenCalledWith(
+      'user-uuid',
+      'prev-a',
+      [{ turnId: 'user-uuid', expectsFileRestore: false }],
+    );
     const msg = mockNotice.mock.calls[0][0] as string;
     expect(msg).toContain('Save failed');
+  });
+
+  it('restores displayContent into the input box when present', async () => {
+    deps.state.currentConversationId = 'conv-1';
+    deps.state.messages = [
+      { id: 'm1', role: 'assistant', content: '', timestamp: 1, sdkAssistantUuid: 'prev-a' },
+      {
+        id: 'm2',
+        role: 'user',
+        content: '<query>expanded prompt</query>',
+        displayContent: '/fix typo',
+        timestamp: 2,
+        sdkUserUuid: 'user-uuid',
+      },
+      { id: 'm3', role: 'assistant', content: 'resp', timestamp: 3, sdkAssistantUuid: 'resp-a' },
+    ];
+
+    await controller.rewind('m2');
+
+    expect(deps.getInputEl().value).toBe('/fix typo');
+  });
+
+  it('shows a conversation-only notice when no files needed restoring', async () => {
+    deps.state.currentConversationId = 'conv-1';
+    deps.state.messages = [
+      { id: 'm1', role: 'assistant', content: '', timestamp: 1, sdkAssistantUuid: 'prev-a' },
+      { id: 'm2', role: 'user', content: 'rewrite', timestamp: 2, sdkUserUuid: 'user-uuid' },
+      { id: 'm3', role: 'assistant', content: 'resp', timestamp: 3, sdkAssistantUuid: 'resp-a' },
+    ];
+    mockAgentService.rewind.mockResolvedValue({
+      conversationRewound: true,
+      restoredFiles: [],
+      missingArtifacts: [],
+      unsafeTurns: [],
+      warnings: [],
+    });
+
+    await controller.rewind('m2');
+
+    const msg = mockNotice.mock.calls[0][0] as string;
+    expect(msg).toContain('prompt');
+  });
+
+  it('shows a partial notice when some later changes could not be restored', async () => {
+    deps.state.currentConversationId = 'conv-1';
+    deps.state.messages = [
+      { id: 'm1', role: 'assistant', content: '', timestamp: 1, sdkAssistantUuid: 'prev-a' },
+      { id: 'm2', role: 'user', content: 'rewrite', timestamp: 2, sdkUserUuid: 'user-uuid' },
+      { id: 'm3', role: 'assistant', content: 'resp', timestamp: 3, sdkAssistantUuid: 'resp-a' },
+    ];
+    mockAgentService.rewind.mockResolvedValue({
+      conversationRewound: true,
+      restoredFiles: ['a.ts'],
+      missingArtifacts: ['user-uuid'],
+      unsafeTurns: [],
+      warnings: ['missing rewind data'],
+    });
+
+    await controller.rewind('m2');
+
+    const msg = mockNotice.mock.calls[0][0] as string;
+    expect(msg).toContain('could not be restored');
+  });
+
+  it('passes later user turns so rewind can restore all discarded history', async () => {
+    deps.state.currentConversationId = 'conv-1';
+    deps.state.messages = [
+      { id: 'm1', role: 'assistant', content: '', timestamp: 1, sdkAssistantUuid: 'prev-a' },
+      { id: 'm2', role: 'user', content: 'first', timestamp: 2, sdkUserUuid: 'u1' },
+      {
+        id: 'm3',
+        role: 'assistant',
+        content: 'wrote file',
+        timestamp: 3,
+        sdkAssistantUuid: 'resp-a',
+        toolCalls: [{ id: 'write-1', name: 'Write', input: {}, status: 'completed' }],
+      },
+      { id: 'm4', role: 'user', content: 'second', timestamp: 4, sdkUserUuid: 'u2' },
+      { id: 'm5', role: 'assistant', content: 'plain reply', timestamp: 5, sdkAssistantUuid: 'resp-b' },
+    ];
+
+    await controller.rewind('m2');
+
+    expect(mockAgentService.rewind).toHaveBeenCalledWith(
+      'u1',
+      'prev-a',
+      [
+        { turnId: 'u1', expectsFileRestore: true },
+        { turnId: 'u2', expectsFileRestore: false },
+      ],
+    );
   });
 });

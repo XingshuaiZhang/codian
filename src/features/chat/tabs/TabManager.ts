@@ -446,12 +446,17 @@ export class TabManager implements TabManagerInterface {
 
     await this.plugin.updateConversation(conversation.id, {
       messages: context.messages,
-      forkSource: { sessionId: context.sourceSessionId, resumeAt: context.resumeAt },
+      forkSource: {
+        sessionId: context.sourceSessionId,
+        ...(context.resumeAt ? { resumeAt: context.resumeAt } : {}),
+      },
       // Prevent immediate SDK message load from merging duplicates with the copied messages.
       // This is in-memory only (not persisted in metadata).
       sdkMessagesLoaded: true,
       ...(title && { title }),
       ...(context.currentNote && { currentNote: context.currentNote }),
+      ...(context.externalContextPaths?.length ? { externalContextPaths: context.externalContextPaths } : {}),
+      ...(context.enabledMcpServers?.length ? { enabledMcpServers: context.enabledMcpServers } : {}),
     });
 
     return conversation.id;

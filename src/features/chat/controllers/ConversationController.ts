@@ -7,7 +7,7 @@ import type CodianPlugin from '../../../main';
 import { confirm } from '../../../shared/modals/ConfirmModal';
 import { cleanupThinkingBlock } from '../rendering';
 import type { MessageRenderer } from '../rendering/MessageRenderer';
-import { findRewindContext } from '../rewind';
+import { collectRewindTurnTargets, findRewindContext } from '../rewind';
 import type { SubagentManager } from '../services/SubagentManager';
 import type { TitleGenerationService } from '../services/TitleGenerationService';
 import type { ChatState } from '../state/ChatState';
@@ -380,29 +380,31 @@ export class ConversationController {
       return;
     }
 
+    const rewindTargets = collectRewindTurnTargets(msgs, userIdx);
+
     let result;
     try {
-      result = await agentService.rewind(userMsg.sdkUserUuid, prevAssistantUuid);
+      result = await agentService.rewind(userMsg.sdkUserUuid, prevAssistantUuid ?? '', rewindTargets);
     } catch (e) {
       new Notice(t('chat.rewind.failed', { error: e instanceof Error ? e.message : 'Unknown error' }));
       return;
     }
-    if (!result.canRewind) {
-      new Notice(t('chat.rewind.cannot', { error: result.error ?? 'Unknown error' }));
+    if (!result.conversationRewound) {
+      new Notice(t('chat.rewind.failed', { error: result.error ?? 'Unknown error' }));
       return;
     }
 
     state.truncateAt(userMessageId);
 
     const inputEl = this.deps.getInputEl();
-    inputEl.value = userMsg.content;
+    inputEl.value = userMsg.displayContent ?? userMsg.content;
     inputEl.focus();
 
     const welcomeEl = renderer.renderMessages(state.messages, () => this.getGreeting());
     this.deps.setWelcomeEl(welcomeEl);
     this.updateWelcomeVisibility();
 
-    const filesChanged = result.filesChanged?.length ?? 0;
+    const restoredFileCount = result.restoredFiles.length;
     let saveError: string | null = null;
     try {
       await this.save(false, { resumeSessionAt: prevAssistantUuid });
@@ -411,11 +413,21 @@ export class ConversationController {
     }
 
     if (saveError) {
-      new Notice(t('chat.rewind.noticeSaveFailed', { count: String(filesChanged), error: saveError }));
+      new Notice(t('chat.rewind.noticeSaveFailed', { count: String(restoredFileCount), error: saveError }));
       return;
     }
 
-    new Notice(t('chat.rewind.notice', { count: String(filesChanged) }));
+    if (result.warnings.length > 0) {
+      new Notice(t('chat.rewind.noticePartial', { count: String(restoredFileCount) }));
+      return;
+    }
+
+    if (restoredFileCount === 0) {
+      new Notice(t('chat.rewind.noticeConversationOnly'));
+      return;
+    }
+
+    new Notice(t('chat.rewind.notice', { count: String(restoredFileCount) }));
   }
 
   /**

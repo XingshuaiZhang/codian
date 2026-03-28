@@ -1572,6 +1572,53 @@ describe('TabManager - createForkConversation', () => {
     }));
   });
 
+  it('should omit forkSource.resumeAt when the fork starts before the first user turn', async () => {
+    const mockCreateConversation = jest.fn().mockResolvedValue({ id: 'fork-conv-1' });
+    const mockUpdateConversation = jest.fn().mockResolvedValue(undefined);
+
+    const plugin = createMockPlugin({
+      createConversation: mockCreateConversation,
+      updateConversation: mockUpdateConversation,
+    });
+
+    const manager = createManager({ plugin });
+    await manager.createTab();
+
+    await manager.forkToNewTab({
+      messages: [],
+      sourceSessionId: 'session-abc',
+    });
+
+    expect(mockUpdateConversation).toHaveBeenCalledWith('fork-conv-1', expect.objectContaining({
+      forkSource: { sessionId: 'session-abc' },
+    }));
+  });
+
+  it('should carry external contexts and enabled MCP servers into the fork conversation', async () => {
+    const mockCreateConversation = jest.fn().mockResolvedValue({ id: 'fork-conv-1' });
+    const mockUpdateConversation = jest.fn().mockResolvedValue(undefined);
+
+    const plugin = createMockPlugin({
+      createConversation: mockCreateConversation,
+      updateConversation: mockUpdateConversation,
+    });
+
+    const manager = createManager({ plugin });
+    await manager.createTab();
+
+    await manager.forkToNewTab({
+      messages: [],
+      sourceSessionId: 'session-abc',
+      externalContextPaths: ['/repo/docs', '/repo/specs'],
+      enabledMcpServers: ['filesystem', 'browser'],
+    });
+
+    expect(mockUpdateConversation).toHaveBeenCalledWith('fork-conv-1', expect.objectContaining({
+      externalContextPaths: ['/repo/docs', '/repo/specs'],
+      enabledMcpServers: ['filesystem', 'browser'],
+    }));
+  });
+
   it('should not set title when sourceTitle is undefined', async () => {
     const mockCreateConversation = jest.fn().mockResolvedValue({ id: 'fork-conv-1' });
     const mockUpdateConversation = jest.fn().mockResolvedValue(undefined);

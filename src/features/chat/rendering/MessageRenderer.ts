@@ -193,7 +193,7 @@ export class MessageRenderer {
   private isRewindEligible(allMessages?: ChatMessage[], index?: number): boolean {
     if (!allMessages || index === undefined) return false;
     const ctx = findRewindContext(allMessages, index);
-    return !!ctx.prevAssistantUuid && ctx.hasResponse;
+    return ctx.hasResponse && !!ctx.prevAssistantUuid;
   }
 
   /**
