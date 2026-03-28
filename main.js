@@ -42485,9 +42485,7 @@ var StorageService = class {
   async ensureDirectories() {
     await this.adapter.ensureFolder(OBSIDIAN_CODIAN_PATH);
     await this.adapter.ensureFolder(COMMANDS_PATH);
-    await this.adapter.ensureFolder(SKILLS_PATH);
     await this.adapter.ensureFolder(SESSIONS_PATH);
-    await this.adapter.ensureFolder(AGENTS_PATH);
   }
   async loadAllSlashCommands() {
     const commands = await this.commands.loadAll();
@@ -43575,7 +43573,6 @@ function buildPermissionPreamble(mode) {
   return null;
 }
 var CODIAN_PRIVATE_DIR = [".codian", "obsidian"];
-var LEGACY_PRIVATE_DIR = [".codex", "obsidian"];
 var CodianService = class {
   constructor(plugin, mcpManager) {
     this.sessionManager = new SessionManager();
@@ -44273,9 +44270,8 @@ ${systemPrompt}
     }
     return written;
   }
-  getTurnArtifactDir(turnId, legacy = false) {
-    const privateDir = legacy ? LEGACY_PRIVATE_DIR : CODIAN_PRIVATE_DIR;
-    return path4.join(this.getVaultPath(), ...privateDir, "rewind", turnId);
+  getTurnArtifactDir(turnId) {
+    return path4.join(this.getVaultPath(), ...CODIAN_PRIVATE_DIR, "rewind", turnId);
   }
   async backupFileForTurn(artifact, toolName, input) {
     const filePath = getPathFromToolInput(toolName, input);
@@ -44315,16 +44311,11 @@ ${systemPrompt}
     await fs4.promises.writeFile(manifestPath, JSON.stringify(artifact, null, 2));
   }
   async loadTurnArtifact(turnId) {
-    const manifestPaths = [
-      path4.join(this.getTurnArtifactDir(turnId), "manifest.json"),
-      path4.join(this.getTurnArtifactDir(turnId, true), "manifest.json")
-    ];
-    for (const manifestPath of manifestPaths) {
-      try {
-        const raw = await fs4.promises.readFile(manifestPath, "utf8");
-        return JSON.parse(raw);
-      } catch (e) {
-      }
+    const manifestPath = path4.join(this.getTurnArtifactDir(turnId), "manifest.json");
+    try {
+      const raw = await fs4.promises.readFile(manifestPath, "utf8");
+      return JSON.parse(raw);
+    } catch (e) {
     }
     return null;
   }

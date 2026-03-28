@@ -538,27 +538,29 @@ describe('CodianService', () => {
     });
   });
 
-  it('loads legacy rewind artifacts from .codex/obsidian/rewind', async () => {
-    const filePath = path.join(vaultPath, 'notes', 'legacy.md');
-    await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
-    await fs.promises.writeFile(filePath, 'legacy content');
-
+  it('ignores legacy rewind artifacts stored under .codex/obsidian/rewind', async () => {
     const manifestDir = path.join(vaultPath, '.codex', 'obsidian', 'rewind', 'turn-legacy');
     await fs.promises.mkdir(manifestDir, { recursive: true });
     await fs.promises.writeFile(path.join(manifestDir, 'manifest.json'), JSON.stringify({
       turnId: 'turn-legacy',
       sessionId: 'session-1',
-      filesChanged: [filePath],
-      backups: [{ originalPath: filePath, existedBefore: false }],
+      filesChanged: [],
+      backups: [],
       opaqueSideEffects: false,
       createdAt: Date.now(),
     }));
 
     const result = await service.rewind('turn-legacy', '');
 
-    expect(result.conversationRewound).toBe(true);
-    expect(result.restoredFiles).toEqual([filePath]);
-    expect(fs.existsSync(filePath)).toBe(false);
+    expect(result).toEqual({
+      conversationRewound: true,
+      restoredFiles: [],
+      missingArtifacts: ['turn-legacy'],
+      unsafeTurns: [],
+      warnings: ['No rewind data is available for turn turn-legacy.'],
+      insertions: 0,
+      deletions: 0,
+    });
   });
 
   it('restores later turn artifacts before earlier ones for the same file', async () => {

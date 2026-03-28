@@ -261,6 +261,24 @@ describe('StorageService convenience methods', () => {
     });
   });
 
+  describe('directory initialization', () => {
+    it('only pre-creates plugin-owned codian directories', async () => {
+      const { plugin, folders } = createMockPlugin({});
+      const storage = new StorageService(plugin);
+
+      await storage.initialize();
+
+      expect(folders.has('.codian')).toBe(true);
+      expect(folders.has('.codian/obsidian')).toBe(true);
+      expect(folders.has('.codian/obsidian/commands')).toBe(true);
+      expect(folders.has('.codian/obsidian/sessions')).toBe(true);
+      expect(folders.has('.agents')).toBe(false);
+      expect(folders.has('.agents/skills')).toBe(false);
+      expect(folders.has('.codex')).toBe(false);
+      expect(folders.has('.codex/agents')).toBe(false);
+    });
+  });
+
   describe('getAdapter', () => {
     it('returns the VaultFileAdapter instance', () => {
       const { plugin } = createMockPlugin({});

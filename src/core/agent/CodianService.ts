@@ -168,7 +168,6 @@ function buildPermissionPreamble(mode: string): string | null {
 }
 
 const CODIAN_PRIVATE_DIR = ['.codian', 'obsidian'] as const;
-const LEGACY_PRIVATE_DIR = ['.codex', 'obsidian'] as const;
 
 export class CodianService {
   private plugin: CodianPlugin;
@@ -1030,9 +1029,8 @@ export class CodianService {
     return written;
   }
 
-  private getTurnArtifactDir(turnId: string, legacy = false): string {
-    const privateDir = legacy ? LEGACY_PRIVATE_DIR : CODIAN_PRIVATE_DIR;
-    return path.join(this.getVaultPath(), ...privateDir, 'rewind', turnId);
+  private getTurnArtifactDir(turnId: string): string {
+    return path.join(this.getVaultPath(), ...CODIAN_PRIVATE_DIR, 'rewind', turnId);
   }
 
   private async backupFileForTurn(
@@ -1085,18 +1083,13 @@ export class CodianService {
   }
 
   private async loadTurnArtifact(turnId: string): Promise<TurnArtifact | null> {
-    const manifestPaths = [
-      path.join(this.getTurnArtifactDir(turnId), 'manifest.json'),
-      path.join(this.getTurnArtifactDir(turnId, true), 'manifest.json'),
-    ];
+    const manifestPath = path.join(this.getTurnArtifactDir(turnId), 'manifest.json');
 
-    for (const manifestPath of manifestPaths) {
-      try {
-        const raw = await fs.promises.readFile(manifestPath, 'utf8');
-        return JSON.parse(raw) as TurnArtifact;
-      } catch {
-        // Try the next candidate path.
-      }
+    try {
+      const raw = await fs.promises.readFile(manifestPath, 'utf8');
+      return JSON.parse(raw) as TurnArtifact;
+    } catch {
+      // Missing or malformed artifacts are treated as unavailable rewind data.
     }
 
     return null;

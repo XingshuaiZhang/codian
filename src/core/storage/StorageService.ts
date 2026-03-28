@@ -31,7 +31,7 @@ import {
   DEFAULT_SETTINGS,
   legacyPermissionsToCCPermissions,
 } from '../types';
-import { AGENTS_PATH, AgentVaultStorage } from './AgentVaultStorage';
+import { AgentVaultStorage } from './AgentVaultStorage';
 import { CC_SETTINGS_PATH, CCSettingsStorage, isLegacyPermissionsFormat } from './CCSettingsStorage';
 import {
   CodianSettingsStorage,
@@ -45,7 +45,7 @@ import {
   mergeEnvironmentVariables,
 } from './migrationConstants';
 import { SESSIONS_PATH, SessionStorage } from './SessionStorage';
-import { SKILLS_PATH, SkillStorage } from './SkillStorage';
+import { SkillStorage } from './SkillStorage';
 import { COMMANDS_PATH, SlashCommandStorage } from './SlashCommandStorage';
 import { VaultFileAdapter } from './VaultFileAdapter';
 
@@ -372,9 +372,7 @@ export class StorageService {
   async ensureDirectories(): Promise<void> {
     await this.adapter.ensureFolder(OBSIDIAN_CODIAN_PATH);
     await this.adapter.ensureFolder(COMMANDS_PATH);
-    await this.adapter.ensureFolder(SKILLS_PATH);
     await this.adapter.ensureFolder(SESSIONS_PATH);
-    await this.adapter.ensureFolder(AGENTS_PATH);
   }
 
   async loadAllSlashCommands(): Promise<SlashCommand[]> {
