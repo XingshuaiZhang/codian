@@ -20,6 +20,7 @@ import {
 import { type CursorContext, getEditorView } from '../../../utils/editor';
 import { buildExternalContextDisplayEntries } from '../../../utils/externalContext';
 import { externalContextScanner } from '../../../utils/externalContextScanner';
+import { normalizeStringArray } from '../../../utils/frontmatter';
 import { escapeHtml, normalizeInsertionText } from '../../../utils/inlineEdit';
 import { getVaultPath, normalizePathForVault as normalizePathForVaultUtil } from '../../../utils/path';
 import { type InlineEditMode, InlineEditService } from '../InlineEditService';
@@ -442,6 +443,10 @@ class InlineEditController {
         getExternalContexts: this.getExternalContexts,
         getCachedVaultFolders: () => this.mentionDataProvider.getCachedVaultFolders(),
         getCachedVaultFiles: () => this.mentionDataProvider.getCachedVaultFiles(),
+        getVaultFileAliases: (file) => {
+          const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter as Record<string, unknown> | undefined;
+          return normalizeStringArray(frontmatter?.aliases ?? frontmatter?.alias) ?? [];
+        },
         normalizePathForVault: (rawPath) => this.normalizePathForVault(rawPath),
       },
       { fixed: true }

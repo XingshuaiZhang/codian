@@ -57507,22 +57507,35 @@ var MentionDropdownController = class {
         mtime: (_a4 = folderMtimeMap.get(f.path)) != null ? _a4 : 0
       };
     }).sort(compare).slice(0, 50);
-    const scoredFiles = allFiles.filter(
-      (f) => f.path.toLowerCase().includes(searchLower) || f.name.toLowerCase().includes(searchLower)
-    ).map((f) => ({
-      type: "file",
-      name: f.name,
-      path: f.path,
-      file: f,
-      startsWithQuery: f.name.toLowerCase().startsWith(searchLower),
-      mtime: f.stat.mtime
-    })).sort(compare).slice(0, 100);
+    const scoredFiles = allFiles.flatMap((f) => {
+      const aliases = this.callbacks.getVaultFileAliases(f);
+      const matchedAlias = searchLower ? aliases.find((alias) => alias.toLowerCase().includes(searchLower)) : void 0;
+      const matches = f.path.toLowerCase().includes(searchLower) || f.name.toLowerCase().includes(searchLower) || !!matchedAlias;
+      if (!matches) {
+        return [];
+      }
+      return [{
+        type: "file",
+        name: f.name,
+        path: f.path,
+        file: f,
+        matchedAlias,
+        startsWithQuery: f.name.toLowerCase().startsWith(searchLower) || !!(matchedAlias == null ? void 0 : matchedAlias.toLowerCase().startsWith(searchLower)),
+        mtime: f.stat.mtime
+      }];
+    }).sort(compare).slice(0, 100);
     const merged = [...scoredFolders, ...scoredFiles].sort(compare);
     for (const item of merged) {
       if (item.type === "folder") {
         this.filteredMentionItems.push({ type: "folder", name: item.name, path: item.path });
       } else {
-        this.filteredMentionItems.push({ type: "file", name: item.name, path: item.path, file: item.file });
+        this.filteredMentionItems.push({
+          type: "file",
+          name: item.name,
+          path: item.path,
+          file: item.file,
+          matchedAlias: item.matchedAlias
+        });
       }
     }
     return merged.length;
@@ -57604,8 +57617,14 @@ var MentionDropdownController = class {
               cls: "codian-mention-name codian-mention-name-folder"
             }).setText(`@${item.path}/`);
             break;
+          case "file":
+            textEl.createSpan({ cls: "codian-mention-path" }).setText(item.path);
+            if (item.matchedAlias) {
+              textEl.createSpan({ cls: "codian-mention-desc" }).setText(item.matchedAlias);
+            }
+            break;
           default:
-            textEl.createSpan({ cls: "codian-mention-path" }).setText(item.path || item.name);
+            break;
         }
       },
       onItemClick: (item, index, e) => {
@@ -58112,6 +58131,7 @@ var FileContextManager = class {
         },
         getCachedVaultFolders: () => this.mentionDataProvider.getCachedVaultFolders(),
         getCachedVaultFiles: () => this.mentionDataProvider.getCachedVaultFiles(),
+        getVaultFileAliases: (file2) => this.getVaultFileAliases(file2),
         normalizePathForVault: (rawPath) => this.normalizePathForVault(rawPath)
       }
     );
@@ -58319,6 +58339,11 @@ var FileContextManager = class {
   }
   updateMcpMentionsFromText(text) {
     this.mentionDropdown.updateMcpMentionsFromText(text);
+  }
+  getVaultFileAliases(file2) {
+    var _a3, _b, _c;
+    const frontmatter = (_a3 = this.app.metadataCache.getFileCache(file2)) == null ? void 0 : _a3.frontmatter;
+    return (_c = normalizeStringArray((_b = frontmatter == null ? void 0 : frontmatter.aliases) != null ? _b : frontmatter == null ? void 0 : frontmatter.alias)) != null ? _c : [];
   }
   hasExcludedTag(file2) {
     var _a3;
@@ -62573,6 +62598,11 @@ var InlineEditController = class {
         getExternalContexts: this.getExternalContexts,
         getCachedVaultFolders: () => this.mentionDataProvider.getCachedVaultFolders(),
         getCachedVaultFiles: () => this.mentionDataProvider.getCachedVaultFiles(),
+        getVaultFileAliases: (file2) => {
+          var _a3, _b, _c;
+          const frontmatter = (_a3 = this.app.metadataCache.getFileCache(file2)) == null ? void 0 : _a3.frontmatter;
+          return (_c = normalizeStringArray((_b = frontmatter == null ? void 0 : frontmatter.aliases) != null ? _b : frontmatter == null ? void 0 : frontmatter.alias)) != null ? _c : [];
+        },
         normalizePathForVault: (rawPath) => this.normalizePathForVault(rawPath)
       },
       { fixed: true }

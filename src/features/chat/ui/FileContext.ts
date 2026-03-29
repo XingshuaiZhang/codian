@@ -12,6 +12,7 @@ import {
 } from '../../../utils/contextMentionResolver';
 import { buildExternalContextDisplayEntries } from '../../../utils/externalContext';
 import { externalContextScanner } from '../../../utils/externalContextScanner';
+import { normalizeStringArray } from '../../../utils/frontmatter';
 import { getVaultPath, normalizePathForVault as normalizePathForVaultUtil } from '../../../utils/path';
 import { FileContextState } from './file-context/state/FileContextState';
 import { FileChipsView } from './file-context/view/FileChipsView';
@@ -95,6 +96,7 @@ export class FileContextManager {
         getExternalContexts: () => this.callbacks.getExternalContexts?.() || [],
         getCachedVaultFolders: () => this.mentionDataProvider.getCachedVaultFolders(),
         getCachedVaultFiles: () => this.mentionDataProvider.getCachedVaultFiles(),
+        getVaultFileAliases: (file) => this.getVaultFileAliases(file),
         normalizePathForVault: (rawPath) => this.normalizePathForVault(rawPath),
       }
     );
@@ -355,6 +357,11 @@ export class FileContextManager {
 
   updateMcpMentionsFromText(text: string): void {
     this.mentionDropdown.updateMcpMentionsFromText(text);
+  }
+
+  private getVaultFileAliases(file: TFile): string[] {
+    const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter as Record<string, unknown> | undefined;
+    return normalizeStringArray(frontmatter?.aliases ?? frontmatter?.alias) ?? [];
   }
 
   private hasExcludedTag(file: TFile): boolean {

@@ -28,6 +28,7 @@ export interface MentionDropdownCallbacks {
   getExternalContexts: () => string[];
   getCachedVaultFolders: () => Array<Pick<FolderMentionItem, 'name' | 'path'>>;
   getCachedVaultFiles: () => TFile[];
+  getVaultFileAliases: (file: TFile) => string[];
   normalizePathForVault: (path: string | undefined | null) => string | null;
 }
 
@@ -342,7 +343,15 @@ export class MentionDropdownController {
   private appendVaultItems(searchLower: string): number {
     type ScoredItem =
       | { type: 'folder'; name: string; path: string; startsWithQuery: boolean; mtime: number }
-      | { type: 'file'; name: string; path: string; file: TFile; startsWithQuery: boolean; mtime: number };
+      | {
+        type: 'file';
+        name: string;
+        path: string;
+        file: TFile;
+        startsWithQuery: boolean;
+        mtime: number;
+        matchedAlias?: string;
+      };
 
     const compare = (a: ScoredItem, b: ScoredItem): number => {
       if (a.startsWithQuery !== b.startsWithQuery) return a.startsWithQuery ? -1 : 1;
@@ -386,17 +395,28 @@ export class MentionDropdownController {
       .slice(0, 50);
 
     const scoredFiles: ScoredItem[] = allFiles
-      .filter(f =>
-        f.path.toLowerCase().includes(searchLower) || f.name.toLowerCase().includes(searchLower)
-      )
-      .map(f => ({
-        type: 'file' as const,
-        name: f.name,
-        path: f.path,
-        file: f,
-        startsWithQuery: f.name.toLowerCase().startsWith(searchLower),
-        mtime: f.stat.mtime,
-      }))
+      .flatMap((f) => {
+        const aliases = this.callbacks.getVaultFileAliases(f);
+        const matchedAlias = searchLower
+          ? aliases.find(alias => alias.toLowerCase().includes(searchLower))
+          : undefined;
+        const matches = f.path.toLowerCase().includes(searchLower)
+          || f.name.toLowerCase().includes(searchLower)
+          || !!matchedAlias;
+        if (!matches) {
+          return [];
+        }
+        return [{
+          type: 'file' as const,
+          name: f.name,
+          path: f.path,
+          file: f,
+          matchedAlias,
+          startsWithQuery: f.name.toLowerCase().startsWith(searchLower)
+            || !!matchedAlias?.toLowerCase().startsWith(searchLower),
+          mtime: f.stat.mtime,
+        }];
+      })
       .sort(compare)
       .slice(0, 100);
 
@@ -406,7 +426,13 @@ export class MentionDropdownController {
       if (item.type === 'folder') {
         this.filteredMentionItems.push({ type: 'folder', name: item.name, path: item.path });
       } else {
-        this.filteredMentionItems.push({ type: 'file', name: item.name, path: item.path, file: item.file });
+        this.filteredMentionItems.push({
+          type: 'file',
+          name: item.name,
+          path: item.path,
+          file: item.file,
+          matchedAlias: item.matchedAlias,
+        });
       }
     }
 
@@ -486,8 +512,14 @@ export class MentionDropdownController {
               cls: 'codian-mention-name codian-mention-name-folder',
             }).setText(`@${item.path}/`);
             break;
+          case 'file':
+            textEl.createSpan({ cls: 'codian-mention-path' }).setText(item.path);
+            if (item.matchedAlias) {
+              textEl.createSpan({ cls: 'codian-mention-desc' }).setText(item.matchedAlias);
+            }
+            break;
           default:
-            textEl.createSpan({ cls: 'codian-mention-path' }).setText(item.path || item.name);
+            break;
         }
       },
       onItemClick: (item, index, e) => {

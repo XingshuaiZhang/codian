@@ -275,6 +275,40 @@ describe('FileContextManager', () => {
     manager.destroy();
   });
 
+  it('matches vault file aliases from frontmatter in @ dropdown', () => {
+    const fileCacheByPath = new Map<string, any>([
+      ['notes/project-overview.md', { frontmatter: { aliases: ['overview'] } }],
+    ]);
+    const app = createMockApp({
+      files: ['notes/project-overview.md'],
+      fileCacheByPath,
+    });
+    const manager = new FileContextManager(
+      app,
+      containerEl as any,
+      inputEl,
+      createMockCallbacks()
+    );
+
+    inputEl.value = '@over';
+    inputEl.selectionStart = 5;
+    inputEl.selectionEnd = 5;
+    manager.handleInputChange();
+    jest.advanceTimersByTime(200);
+
+    const pathEl = findByClass(containerEl, 'codian-mention-path');
+    const aliasEl = findByClass(containerEl, 'codian-mention-desc');
+    expect(pathEl?.textContent).toBe('notes/project-overview.md');
+    expect(aliasEl?.textContent).toBe('overview');
+
+    manager.handleMentionKeydown({ key: 'Enter', preventDefault: jest.fn(), isComposing: false } as any);
+
+    expect(inputEl.value).toBe('@notes/project-overview.md ');
+    expect(manager.getAttachedFiles().has('notes/project-overview.md')).toBe(true);
+
+    manager.destroy();
+  });
+
   it('wires getCachedVaultFolders through VaultFolderCache.getFolders', () => {
     const folder = { name: 'src', path: 'src' } as any;
     const getFoldersSpy = jest

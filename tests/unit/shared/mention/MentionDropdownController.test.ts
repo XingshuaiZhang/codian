@@ -56,6 +56,7 @@ function createMockCallbacks(overrides: Partial<MentionDropdownCallbacks> = {}):
     getExternalContexts: jest.fn().mockReturnValue([]),
     getCachedVaultFolders: jest.fn().mockReturnValue([]),
     getCachedVaultFiles: jest.fn().mockReturnValue([]),
+    getVaultFileAliases: jest.fn().mockReturnValue([]),
     normalizePathForVault: jest.fn((path: string | undefined | null) => path ?? null),
     ...overrides,
   };
@@ -507,6 +508,42 @@ describe('MentionDropdownController', () => {
   });
 
   describe('vault folder mentions', () => {
+    it('matches vault files by alias and keeps path insertion semantics', () => {
+      const onAttachFile = jest.fn();
+      const localCallbacks = createMockCallbacks({
+        onAttachFile,
+        getCachedVaultFiles: jest.fn().mockReturnValue([
+          { path: 'notes/project-overview.md', name: 'project-overview.md', stat: { mtime: Date.now() } } as any,
+        ]),
+        getVaultFileAliases: jest.fn().mockReturnValue(['overview']),
+      });
+      const localInput = createMockInput();
+      const localController = new MentionDropdownController(createMockEl(), localInput, localCallbacks);
+
+      localInput.value = '@over';
+      localInput.selectionStart = 5;
+      localController.handleInputChange();
+      jest.advanceTimersByTime(200);
+
+      const renderOptions = getLatestDropdownRenderOptions();
+      const fileItem = renderOptions.items.find((item: any) => item.type === 'file');
+      expect(fileItem?.path).toBe('notes/project-overview.md');
+      expect(fileItem?.matchedAlias).toBe('overview');
+
+      const itemEl = createMockEl();
+      renderOptions.renderItem(fileItem, itemEl);
+      expect(itemEl.querySelector('.codian-mention-path')?.textContent).toBe('notes/project-overview.md');
+      expect(itemEl.querySelector('.codian-mention-desc')?.textContent).toBe('overview');
+
+      const enterEvent = { key: 'Enter', preventDefault: jest.fn(), isComposing: false } as any;
+      localController.handleKeydown(enterEvent);
+
+      expect(localInput.value).toBe('@notes/project-overview.md ');
+      expect(onAttachFile).toHaveBeenCalledWith('notes/project-overview.md');
+
+      localController.destroy();
+    });
+
     it('limits vault folder results to 50 items', () => {
       const largeFolderSet = Array.from({ length: 80 }, (_, i) => ({
         name: `folder${i}`,
