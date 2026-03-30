@@ -197,8 +197,12 @@ export default class CodianPlugin extends Plugin {
   acpCliResolver: CodexAcpResolver;
   private conversations: Conversation[] = [];
   private runtimeEnvironmentVariables = '';
+  private deferExternalResourceLoadUntilAfterStartup = false;
+  private deferredExternalRefreshTimer: ReturnType<typeof setTimeout> | null = null;
 
   async onload() {
+    this.deferExternalResourceLoadUntilAfterStartup = process.platform === 'win32';
+
     await this.loadSettings();
     addIcon(PLUGIN_ICON_ID, PLUGIN_ICON_CONTENT);
 
@@ -341,9 +345,16 @@ export default class CodianPlugin extends Plugin {
     });
 
     this.addSettingTab(new CodianSettingTab(this.app, this));
+
+    this.scheduleDeferredExternalRefresh();
   }
 
   async onunload() {
+    if (this.deferredExternalRefreshTimer) {
+      clearTimeout(this.deferredExternalRefreshTimer);
+      this.deferredExternalRefreshTimer = null;
+    }
+
     // Ensures state is saved even if Obsidian quits without calling onClose()
     for (const view of this.getAllViews()) {
       const tabManager = view.getTabManager();
@@ -410,7 +421,7 @@ export default class CodianPlugin extends Plugin {
       didMigrateCliPath = true;
     }
 
-    const { conversations, failedCount } = await this.storage.sessions.loadAllConversations();
+    const { conversations, failedCount } = await this.storage.sessions.loadAllConversationShells();
     this.conversations = conversations.sort(
       (a, b) => (b.lastResponseAt ?? b.updatedAt) - (a.lastResponseAt ?? a.updatedAt)
     );
@@ -444,7 +455,7 @@ export default class CodianPlugin extends Plugin {
     // Persist backfilled and invalidated conversations to their session files
     const conversationsToSave = new Set([...backfilledConversations, ...invalidatedConversations]);
     for (const conv of conversationsToSave) {
-      await this.storage.sessions.saveConversation(conv);
+      await this.persistConversation(conv);
     }
   }
 
@@ -603,8 +614,55 @@ export default class CodianPlugin extends Plugin {
     return this.runtimeEnvironmentVariables;
   }
 
+  private shouldDeferStartupExternalResources(): boolean {
+    return process.platform === 'win32' && this.deferExternalResourceLoadUntilAfterStartup;
+  }
+
+  private scheduleDeferredExternalRefresh(): void {
+    if (!this.shouldDeferStartupExternalResources()) {
+      this.deferExternalResourceLoadUntilAfterStartup = false;
+      return;
+    }
+
+    this.deferredExternalRefreshTimer = setTimeout(() => {
+      this.deferredExternalRefreshTimer = null;
+      this.deferExternalResourceLoadUntilAfterStartup = false;
+      void this.refreshDeferredExternalResources();
+    }, 0);
+  }
+
+  private async refreshDeferredExternalResources(): Promise<void> {
+    try {
+      this.settings.slashCommands = await this.loadAllSlashCommands();
+    } catch {
+      // Best-effort background refresh only.
+    }
+
+    try {
+      await this.mcpManager.loadServers();
+      this.refreshOpenViewMcpManagers();
+    } catch {
+      // Best-effort background refresh only.
+    }
+  }
+
+  private refreshOpenViewMcpManagers(): void {
+    for (const view of this.getAllViews()) {
+      const tabManager = view.getTabManager();
+      if (!tabManager) continue;
+
+      for (const tab of tabManager.getAllTabs()) {
+        tab.ui.mcpServerSelector?.setMcpManager(this.mcpManager);
+      }
+    }
+  }
+
   async loadAllSlashCommands(): Promise<SlashCommand[]> {
     const localCommands = await this.storage.loadAllSlashCommands();
+    if (this.shouldDeferStartupExternalResources()) {
+      return localCommands;
+    }
+
     const externalSkills = await loadExternalCodexSkills({
       runtimeMode: process.platform === 'win32' ? 'wsl' : (this.settings.codexRuntimeMode ?? 'native'),
       wslDistribution: this.settings.wslDistribution,
@@ -619,6 +677,10 @@ export default class CodianPlugin extends Plugin {
       source: server.source ?? 'vault' as const,
     }));
     const projectServers = await loadProjectCodexMcpServers(this.storage.getAdapter());
+    if (this.shouldDeferStartupExternalResources()) {
+      return mergeMcpServers(vaultServers, projectServers);
+    }
+
     const externalServers = await loadExternalCodexMcpServers({
       runtimeMode: process.platform === 'win32' ? 'wsl' : (this.settings.codexRuntimeMode ?? 'native'),
       wslDistribution: this.settings.wslDistribution,
@@ -709,11 +771,55 @@ export default class CodianPlugin extends Plugin {
   }
 
   private getConversationPreview(conv: Conversation): string {
+    if (typeof conv.preview === 'string' && conv.preview.length > 0) {
+      return conv.preview;
+    }
     const firstUserMsg = conv.messages.find(m => m.role === 'user');
     if (!firstUserMsg) {
       return 'New conversation';
     }
     return firstUserMsg.content.substring(0, 50) + (firstUserMsg.content.length > 50 ? '...' : '');
+  }
+
+  private refreshConversationSummary(conversation: Conversation): void {
+    conversation.messageCount = conversation.messages.length;
+    conversation.preview = this.getConversationPreview({
+      ...conversation,
+      preview: undefined,
+    });
+  }
+
+  private async ensureConversationLoaded(conversation: Conversation): Promise<Conversation | null> {
+    if (conversation.messagesLoaded !== false) {
+      return conversation;
+    }
+
+    const currentState: Conversation = { ...conversation };
+    const loaded = await this.storage.sessions.loadConversation(conversation.id);
+    if (!loaded) {
+      if (conversation.isNative) {
+        conversation.messagesLoaded = true;
+        return conversation;
+      }
+      return null;
+    }
+
+    Object.assign(conversation, loaded, currentState, {
+      messages: loaded.messages,
+      preview: currentState.preview ?? loaded.preview,
+      messageCount: currentState.messageCount ?? loaded.messageCount,
+      messagesLoaded: true,
+    });
+
+    return conversation;
+  }
+
+  private async persistConversation(conversation: Conversation): Promise<void> {
+    const writableConversation = await this.ensureConversationLoaded(conversation);
+    if (!writableConversation) return;
+
+    this.refreshConversationSummary(writableConversation);
+    await this.storage.sessions.saveConversation(writableConversation);
   }
 
   /** Fork has no owned session yet; still referencing the source session for resume. */
@@ -848,6 +954,9 @@ export default class CodianPlugin extends Plugin {
       updatedAt: Date.now(),
       sessionId: sessionId ?? null,
       messages: [],
+      messageCount: 0,
+      preview: 'New conversation',
+      messagesLoaded: true,
     };
 
     this.conversations.unshift(conversation);
@@ -857,12 +966,7 @@ export default class CodianPlugin extends Plugin {
   }
 
   async switchConversation(id: string): Promise<Conversation | null> {
-    const conversation = this.conversations.find(c => c.id === id);
-    if (!conversation) return null;
-
-    await this.loadSdkMessagesForConversation(conversation);
-
-    return conversation;
+    return this.getConversationById(id);
   }
 
   async deleteConversation(id: string): Promise<void> {
@@ -891,9 +995,12 @@ export default class CodianPlugin extends Plugin {
     const conversation = this.conversations.find(c => c.id === id);
     if (!conversation) return;
 
-    conversation.title = title.trim() || this.generateDefaultTitle();
-    conversation.updatedAt = Date.now();
-    await this.storage.sessions.saveConversation(conversation);
+    const writableConversation = await this.ensureConversationLoaded(conversation);
+    if (!writableConversation) return;
+
+    writableConversation.title = title.trim() || this.generateDefaultTitle();
+    writableConversation.updatedAt = Date.now();
+    await this.persistConversation(writableConversation);
   }
 
   /**
@@ -903,15 +1010,21 @@ export default class CodianPlugin extends Plugin {
     const conversation = this.conversations.find(c => c.id === id);
     if (!conversation) return;
 
-    Object.assign(conversation, updates, { updatedAt: Date.now() });
-    await this.storage.sessions.saveConversation(conversation);
+    const writableConversation = await this.ensureConversationLoaded(conversation);
+    if (!writableConversation) return;
+
+    Object.assign(writableConversation, updates, { updatedAt: Date.now() });
+    await this.persistConversation(writableConversation);
   }
 
   async getConversationById(id: string): Promise<Conversation | null> {
     const conversation = this.conversations.find(c => c.id === id) || null;
 
     if (conversation) {
-      await this.loadSdkMessagesForConversation(conversation);
+      const loadedConversation = await this.ensureConversationLoaded(conversation);
+      if (!loadedConversation) return null;
+      await this.loadSdkMessagesForConversation(loadedConversation);
+      return loadedConversation;
     }
 
     return conversation;
@@ -927,7 +1040,7 @@ export default class CodianPlugin extends Plugin {
 
   /** Finds an existing empty conversation (no messages). */
   findEmptyConversation(): Conversation | null {
-    return this.conversations.find(c => c.messages.length === 0) || null;
+    return this.conversations.find(c => c.messagesLoaded !== false && c.messages.length === 0) || null;
   }
 
   /** Returns conversation metadata list for the history dropdown. */
@@ -938,10 +1051,10 @@ export default class CodianPlugin extends Plugin {
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
       lastResponseAt: c.lastResponseAt,
-      messageCount: c.messages.length,
+      messageCount: c.messageCount ?? c.messages.length,
       preview: this.getConversationPreview(c),
       titleGenerationStatus: c.titleGenerationStatus,
-      isNative: false,
+      isNative: c.isNative,
     }));
   }
 

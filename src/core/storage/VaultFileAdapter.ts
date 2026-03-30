@@ -5,7 +5,9 @@
  * vault adapter instead of Node's fs module.
  */
 
+import * as fs from 'fs/promises';
 import type { App } from 'obsidian';
+import * as path from 'path';
 
 export class VaultFileAdapter {
   private writeQueue: Promise<void> = Promise.resolve();
@@ -18,6 +20,49 @@ export class VaultFileAdapter {
 
   async read(path: string): Promise<string> {
     return this.app.vault.adapter.read(path);
+  }
+
+  async readFirstLine(filePath: string): Promise<string> {
+    const absolutePath = this.getAbsolutePath(filePath);
+    if (!absolutePath) {
+      const content = await this.read(filePath);
+      return content.split(/\r?\n/, 1)[0] ?? '';
+    }
+
+    let handle: fs.FileHandle | null = null;
+    try {
+      handle = await fs.open(absolutePath, 'r');
+      const chunks: Buffer[] = [];
+      const buffer = Buffer.alloc(4096);
+      let keepReading = true;
+
+      while (keepReading) {
+        const { bytesRead } = await handle.read(buffer, 0, buffer.length, null);
+        if (bytesRead <= 0) {
+          break;
+        }
+
+        const chunk = buffer.subarray(0, bytesRead);
+        const newlineIndex = chunk.indexOf(0x0a);
+        if (newlineIndex >= 0) {
+          chunks.push(chunk.subarray(0, newlineIndex));
+          keepReading = false;
+          continue;
+        }
+
+        chunks.push(chunk);
+        if (bytesRead < buffer.length) {
+          keepReading = false;
+        }
+      }
+
+      return Buffer.concat(chunks).toString('utf8').replace(/\r$/, '');
+    } catch {
+      const content = await this.read(filePath);
+      return content.split(/\r?\n/, 1)[0] ?? '';
+    } finally {
+      await handle?.close().catch(() => undefined);
+    }
   }
 
   async write(path: string, content: string): Promise<void> {
@@ -128,5 +173,14 @@ export class VaultFileAdapter {
     } catch {
       return null;
     }
+  }
+
+  private getAbsolutePath(filePath: string): string | null {
+    const adapter = this.app.vault.adapter as { basePath?: string };
+    if (typeof adapter.basePath !== 'string' || adapter.basePath.length === 0) {
+      return null;
+    }
+
+    return path.join(adapter.basePath, ...filePath.split('/'));
   }
 }

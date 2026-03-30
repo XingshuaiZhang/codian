@@ -110,6 +110,12 @@ export interface Conversation {
   resumeSessionAt?: string;
   /** Fork origin: source session to resume + fork from. Cleared after first SDK session init. */
   forkSource?: ForkSource;
+  /** Cached preview used by history/resume UIs before full messages are loaded. */
+  preview?: string;
+  /** Cached message count used before full messages are loaded. */
+  messageCount?: number;
+  /** Internal flag for lazily-loaded legacy JSONL conversations. */
+  messagesLoaded?: boolean;
 }
 
 /** Lightweight conversation metadata for the history dropdown. */
@@ -169,6 +175,10 @@ export interface SessionMetadata {
   resumeSessionAt?: string;
   /** Fork origin: source session to resume + fork from. Cleared after first SDK session init. */
   forkSource?: ForkSource;
+  /** Cached preview for history UIs. */
+  preview?: string;
+  /** Cached message count for history UIs. */
+  messageCount?: number;
 }
 
 /** Normalized stream chunk from the Codex CLI runtime. */

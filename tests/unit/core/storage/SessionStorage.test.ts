@@ -53,7 +53,7 @@ describe('SessionStorage', () => {
 
       const result = await storage.loadConversation('conv-123');
 
-      expect(result).toEqual({
+      expect(result).toEqual(expect.objectContaining({
         id: 'conv-123',
         title: 'Test Chat',
         createdAt: 1700000000,
@@ -67,7 +67,10 @@ describe('SessionStorage', () => {
         currentNote: undefined,
         usage: undefined,
         titleGenerationStatus: undefined,
-      });
+        preview: 'Hello',
+        messageCount: 2,
+        messagesLoaded: true,
+      }));
     });
 
     it('handles CRLF line endings', async () => {
@@ -522,6 +525,71 @@ describe('SessionStorage', () => {
       expect(conversations[0].id).toBe('good');
       expect(failedCount).toBe(1);
 
+    });
+  });
+
+  describe('loadAllConversationShells', () => {
+    it('uses metadata sidecars for legacy sessions without reading full JSONL', async () => {
+      mockAdapter.listFiles.mockResolvedValue([
+        '.codian/obsidian/sessions/conv-a.jsonl',
+        '.codian/obsidian/sessions/conv-a.meta.json',
+      ]);
+      mockAdapter.exists.mockResolvedValue(true);
+      (mockAdapter as any).readFirstLine = jest.fn();
+
+      mockAdapter.read.mockImplementation((path: string) => {
+        if (path.endsWith('.meta.json')) {
+          return Promise.resolve(JSON.stringify({
+            id: 'conv-a',
+            title: 'Conv A',
+            createdAt: 1700000000,
+            updatedAt: 1700002000,
+            lastResponseAt: 1700001500,
+            sessionId: 'session-a',
+            preview: 'Preview A',
+            messageCount: 4,
+          }));
+        }
+        return Promise.resolve('');
+      });
+
+      const { conversations } = await (storage as any).loadAllConversationShells();
+
+      expect(conversations).toHaveLength(1);
+      expect(conversations[0]).toEqual(expect.objectContaining({
+        id: 'conv-a',
+        title: 'Conv A',
+        sessionId: 'session-a',
+        preview: 'Preview A',
+        messageCount: 4,
+        messages: [],
+        messagesLoaded: false,
+      }));
+      expect((mockAdapter as any).readFirstLine).not.toHaveBeenCalled();
+      expect(mockAdapter.read).not.toHaveBeenCalledWith('.codian/obsidian/sessions/conv-a.jsonl');
+    });
+
+    it('falls back to reading only the first line for legacy JSONL headers', async () => {
+      mockAdapter.listFiles.mockResolvedValue([
+        '.codian/obsidian/sessions/conv-b.jsonl',
+      ]);
+      mockAdapter.exists.mockResolvedValue(true);
+      (mockAdapter as any).readFirstLine = jest.fn().mockResolvedValue(
+        '{"type":"meta","id":"conv-b","title":"Conv B","createdAt":1700000000,"updatedAt":1700001000,"sessionId":"session-b"}'
+      );
+
+      const { conversations } = await (storage as any).loadAllConversationShells();
+
+      expect(conversations).toHaveLength(1);
+      expect(conversations[0]).toEqual(expect.objectContaining({
+        id: 'conv-b',
+        title: 'Conv B',
+        sessionId: 'session-b',
+        messages: [],
+        messagesLoaded: false,
+      }));
+      expect((mockAdapter as any).readFirstLine).toHaveBeenCalledWith('.codian/obsidian/sessions/conv-b.jsonl');
+      expect(mockAdapter.read).not.toHaveBeenCalledWith('.codian/obsidian/sessions/conv-b.jsonl');
     });
   });
 

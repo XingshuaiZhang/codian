@@ -1,8 +1,10 @@
 import { Notice } from 'obsidian';
 import * as os from 'os';
 
+import { VaultFileAdapter } from '@/core/storage/VaultFileAdapter';
 import { TOOL_TASK } from '@/core/tools/toolNames';
 import { DEFAULT_SETTINGS, VIEW_TYPE_CODIAN } from '@/core/types';
+import * as externalResources from '@/utils/codexExternalResources';
 
 // Mock fs for CodianService
 jest.mock('fs');
@@ -58,6 +60,41 @@ describe('CodianPlugin', () => {
   });
 
   describe('onload', () => {
+    it('defers WSL-backed external resources until after Windows startup', async () => {
+      jest.useFakeTimers();
+
+      const originalPlatform = process.platform;
+      Object.defineProperty(process, 'platform', {
+        configurable: true,
+        value: 'win32',
+      });
+
+      const loadSkillsSpy = jest.spyOn(externalResources, 'loadExternalCodexSkills')
+        .mockResolvedValue([]);
+      const loadMcpSpy = jest.spyOn(externalResources, 'loadExternalCodexMcpServers')
+        .mockResolvedValue([]);
+
+      try {
+        await plugin.onload();
+
+        expect(loadSkillsSpy).not.toHaveBeenCalled();
+        expect(loadMcpSpy).not.toHaveBeenCalled();
+
+        await jest.runOnlyPendingTimersAsync();
+
+        expect(loadSkillsSpy).toHaveBeenCalledTimes(1);
+        expect(loadMcpSpy).toHaveBeenCalledTimes(1);
+      } finally {
+        loadSkillsSpy.mockRestore();
+        loadMcpSpy.mockRestore();
+        Object.defineProperty(process, 'platform', {
+          configurable: true,
+          value: originalPlatform,
+        });
+        jest.useRealTimers();
+      }
+    });
+
     it('should initialize settings with defaults', async () => {
       await plugin.onload();
 
@@ -607,6 +644,75 @@ describe('CodianPlugin', () => {
   });
 
   describe('loadSettings with conversations', () => {
+    it('loads conversation shells on startup and hydrates messages on demand', async () => {
+      const timestamp = Date.now();
+      const metaLine = JSON.stringify({
+        type: 'meta',
+        id: 'conv-shell-1',
+        title: 'Shell Chat',
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        sessionId: 'saved-session',
+      });
+      const readFirstLineSpy = jest.spyOn(VaultFileAdapter.prototype, 'readFirstLine')
+        .mockResolvedValue(metaLine);
+
+      mockApp.vault.adapter.exists.mockImplementation(async (path: string) => {
+        return path === '.codian/obsidian/settings.json' ||
+          path === '.codian/obsidian/sessions' ||
+          path === '.codian/obsidian/sessions/conv-shell-1.jsonl';
+      });
+      mockApp.vault.adapter.list.mockImplementation(async (path: string) => {
+        if (path === '.codian/obsidian/sessions') {
+          return { files: ['.codian/obsidian/sessions/conv-shell-1.jsonl'], folders: [] };
+        }
+        return { files: [], folders: [] };
+      });
+      mockApp.vault.adapter.read.mockImplementation(async (path: string) => {
+        if (path === '.codian/obsidian/settings.json') {
+          return JSON.stringify({});
+        }
+        if (path === '.codian/obsidian/sessions/conv-shell-1.jsonl') {
+          return [
+            metaLine,
+            JSON.stringify({
+              type: 'message',
+              message: { id: 'msg-1', role: 'user', content: 'Hello lazy load', timestamp },
+            }),
+          ].join('\n');
+        }
+        return '';
+      });
+
+      (plugin.loadData as jest.Mock).mockResolvedValue({});
+
+      try {
+        await plugin.loadSettings();
+
+        expect(plugin.getConversationList()).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              id: 'conv-shell-1',
+              title: 'Shell Chat',
+            }),
+          ])
+        );
+        expect(mockApp.vault.adapter.read).not.toHaveBeenCalledWith(
+          '.codian/obsidian/sessions/conv-shell-1.jsonl'
+        );
+
+        const loaded = await plugin.getConversationById('conv-shell-1');
+
+        expect(mockApp.vault.adapter.read).toHaveBeenCalledWith(
+          '.codian/obsidian/sessions/conv-shell-1.jsonl'
+        );
+        expect(loaded?.messages).toHaveLength(1);
+        expect(loaded?.messages[0].content).toBe('Hello lazy load');
+      } finally {
+        readFirstLineSpy.mockRestore();
+      }
+    });
+
     it('should load saved conversations from JSONL files', async () => {
       const timestamp = Date.now();
       const sessionJsonl = JSON.stringify({

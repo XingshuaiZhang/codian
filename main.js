@@ -305,10 +305,10 @@ function mergeDefs(...defs) {
 function cloneDef(schema) {
   return mergeDefs(schema._zod.def);
 }
-function getElementAtPath(obj, path11) {
-  if (!path11)
+function getElementAtPath(obj, path12) {
+  if (!path12)
     return obj;
-  return path11.reduce((acc, key) => acc == null ? void 0 : acc[key], obj);
+  return path12.reduce((acc, key) => acc == null ? void 0 : acc[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -621,12 +621,12 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path11, issues) {
+function prefixIssues(path12, issues) {
   return issues.map((iss) => {
     var _a4;
     var _a3;
     (_a4 = (_a3 = iss).path) != null ? _a4 : _a3.path = [];
-    iss.path.unshift(path11);
+    iss.path.unshift(path12);
     return iss;
   });
 }
@@ -870,7 +870,7 @@ function formatError(error48, mapper = (issue2) => issue2.message) {
 }
 function treeifyError(error48, mapper = (issue2) => issue2.message) {
   const result = { errors: [] };
-  const processError = (error49, path11 = []) => {
+  const processError = (error49, path12 = []) => {
     var _a4, _b2, _c, _d;
     var _a3, _b;
     for (const issue2 of error49.issues) {
@@ -881,7 +881,7 @@ function treeifyError(error48, mapper = (issue2) => issue2.message) {
       } else if (issue2.code === "invalid_element") {
         processError({ issues: issue2.issues }, issue2.path);
       } else {
-        const fullpath = [...path11, ...issue2.path];
+        const fullpath = [...path12, ...issue2.path];
         if (fullpath.length === 0) {
           result.errors.push(mapper(issue2));
           continue;
@@ -913,8 +913,8 @@ function treeifyError(error48, mapper = (issue2) => issue2.message) {
 }
 function toDotPath(_path) {
   const segs = [];
-  const path11 = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
-  for (const seg of path11) {
+  const path12 = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
+  for (const seg of path12) {
     if (typeof seg === "number")
       segs.push(`[${seg}]`);
     else if (typeof seg === "symbol")
@@ -13812,13 +13812,13 @@ function resolveRef(ref, ctx) {
   if (!ref.startsWith("#")) {
     throw new Error("External $ref is not supported, only local refs (#/...) are allowed");
   }
-  const path11 = ref.slice(1).split("/").filter(Boolean);
-  if (path11.length === 0) {
+  const path12 = ref.slice(1).split("/").filter(Boolean);
+  if (path12.length === 0) {
     return ctx.rootSchema;
   }
   const defsKey = ctx.version === "draft-2020-12" ? "$defs" : "definitions";
-  if (path11[0] === defsKey) {
-    const key = path11[1];
+  if (path12[0] === defsKey) {
+    const key = path12[1];
     if (!key || !ctx.defs[key]) {
       throw new Error(`Reference not found: ${ref}`);
     }
@@ -17779,8 +17779,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path11) {
-      let input = path11;
+    function removeDotSegments(path12) {
+      let input = path12;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -17979,8 +17979,8 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path11, query] = wsComponent.resourceName.split("?");
-        wsComponent.path = path11 && path11 !== "/" ? path11 : void 0;
+        const [path12, query] = wsComponent.resourceName.split("?");
+        wsComponent.path = path12 && path12 !== "/" ? path12 : void 0;
         wsComponent.query = query;
         wsComponent.resourceName = void 0;
       }
@@ -27019,12 +27019,12 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name}"`);
       return f;
     };
-    function addFormats(ajv, list, fs12, exportName) {
+    function addFormats(ajv, list, fs13, exportName) {
       var _a3;
       var _b;
       (_a3 = (_b = ajv.opts.code).formats) !== null && _a3 !== void 0 ? _a3 : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
       for (const f of list)
-        ajv.addFormat(f, fs12[f]);
+        ajv.addFormat(f, fs13[f]);
     }
     module2.exports = exports = formatsPlugin;
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -27037,8 +27037,8 @@ var require_windows = __commonJS({
   "node_modules/isexe/windows.js"(exports, module2) {
     module2.exports = isexe;
     isexe.sync = sync;
-    var fs12 = require("fs");
-    function checkPathExt(path11, options) {
+    var fs13 = require("fs");
+    function checkPathExt(path12, options) {
       var pathext = options.pathExt !== void 0 ? options.pathExt : process.env.PATHEXT;
       if (!pathext) {
         return true;
@@ -27049,25 +27049,25 @@ var require_windows = __commonJS({
       }
       for (var i = 0; i < pathext.length; i++) {
         var p = pathext[i].toLowerCase();
-        if (p && path11.substr(-p.length).toLowerCase() === p) {
+        if (p && path12.substr(-p.length).toLowerCase() === p) {
           return true;
         }
       }
       return false;
     }
-    function checkStat(stat, path11, options) {
+    function checkStat(stat, path12, options) {
       if (!stat.isSymbolicLink() && !stat.isFile()) {
         return false;
       }
-      return checkPathExt(path11, options);
+      return checkPathExt(path12, options);
     }
-    function isexe(path11, options, cb) {
-      fs12.stat(path11, function(er, stat) {
-        cb(er, er ? false : checkStat(stat, path11, options));
+    function isexe(path12, options, cb) {
+      fs13.stat(path12, function(er, stat) {
+        cb(er, er ? false : checkStat(stat, path12, options));
       });
     }
-    function sync(path11, options) {
-      return checkStat(fs12.statSync(path11), path11, options);
+    function sync(path12, options) {
+      return checkStat(fs13.statSync(path12), path12, options);
     }
   }
 });
@@ -27077,14 +27077,14 @@ var require_mode = __commonJS({
   "node_modules/isexe/mode.js"(exports, module2) {
     module2.exports = isexe;
     isexe.sync = sync;
-    var fs12 = require("fs");
-    function isexe(path11, options, cb) {
-      fs12.stat(path11, function(er, stat) {
+    var fs13 = require("fs");
+    function isexe(path12, options, cb) {
+      fs13.stat(path12, function(er, stat) {
         cb(er, er ? false : checkStat(stat, options));
       });
     }
-    function sync(path11, options) {
-      return checkStat(fs12.statSync(path11), options);
+    function sync(path12, options) {
+      return checkStat(fs13.statSync(path12), options);
     }
     function checkStat(stat, options) {
       return stat.isFile() && checkMode(stat, options);
@@ -27108,7 +27108,7 @@ var require_mode = __commonJS({
 // node_modules/isexe/index.js
 var require_isexe = __commonJS({
   "node_modules/isexe/index.js"(exports, module2) {
-    var fs12 = require("fs");
+    var fs13 = require("fs");
     var core;
     if (process.platform === "win32" || global.TESTING_WINDOWS) {
       core = require_windows();
@@ -27117,7 +27117,7 @@ var require_isexe = __commonJS({
     }
     module2.exports = isexe;
     isexe.sync = sync;
-    function isexe(path11, options, cb) {
+    function isexe(path12, options, cb) {
       if (typeof options === "function") {
         cb = options;
         options = {};
@@ -27127,7 +27127,7 @@ var require_isexe = __commonJS({
           throw new TypeError("callback not provided");
         }
         return new Promise(function(resolve4, reject) {
-          isexe(path11, options || {}, function(er, is) {
+          isexe(path12, options || {}, function(er, is) {
             if (er) {
               reject(er);
             } else {
@@ -27136,7 +27136,7 @@ var require_isexe = __commonJS({
           });
         });
       }
-      core(path11, options || {}, function(er, is) {
+      core(path12, options || {}, function(er, is) {
         if (er) {
           if (er.code === "EACCES" || options && options.ignoreErrors) {
             er = null;
@@ -27146,9 +27146,9 @@ var require_isexe = __commonJS({
         cb(er, is);
       });
     }
-    function sync(path11, options) {
+    function sync(path12, options) {
       try {
-        return core.sync(path11, options || {});
+        return core.sync(path12, options || {});
       } catch (er) {
         if (options && options.ignoreErrors || er.code === "EACCES") {
           return false;
@@ -27164,7 +27164,7 @@ var require_isexe = __commonJS({
 var require_which = __commonJS({
   "node_modules/which/which.js"(exports, module2) {
     var isWindows2 = process.platform === "win32" || process.env.OSTYPE === "cygwin" || process.env.OSTYPE === "msys";
-    var path11 = require("path");
+    var path12 = require("path");
     var COLON = isWindows2 ? ";" : ":";
     var isexe = require_isexe();
     var getNotFoundError = (cmd) => Object.assign(new Error(`not found: ${cmd}`), { code: "ENOENT" });
@@ -27202,7 +27202,7 @@ var require_which = __commonJS({
           return opt.all && found.length ? resolve4(found) : reject(getNotFoundError(cmd));
         const ppRaw = pathEnv[i];
         const pathPart = /^".*"$/.test(ppRaw) ? ppRaw.slice(1, -1) : ppRaw;
-        const pCmd = path11.join(pathPart, cmd);
+        const pCmd = path12.join(pathPart, cmd);
         const p = !pathPart && /^\.[\\\/]/.test(cmd) ? cmd.slice(0, 2) + pCmd : pCmd;
         resolve4(subStep(p, i, 0));
       });
@@ -27229,7 +27229,7 @@ var require_which = __commonJS({
       for (let i = 0; i < pathEnv.length; i++) {
         const ppRaw = pathEnv[i];
         const pathPart = /^".*"$/.test(ppRaw) ? ppRaw.slice(1, -1) : ppRaw;
-        const pCmd = path11.join(pathPart, cmd);
+        const pCmd = path12.join(pathPart, cmd);
         const p = !pathPart && /^\.[\\\/]/.test(cmd) ? cmd.slice(0, 2) + pCmd : pCmd;
         for (let j = 0; j < pathExt.length; j++) {
           const cur = p + pathExt[j];
@@ -27277,7 +27277,7 @@ var require_path_key = __commonJS({
 var require_resolveCommand = __commonJS({
   "node_modules/cross-spawn/lib/util/resolveCommand.js"(exports, module2) {
     "use strict";
-    var path11 = require("path");
+    var path12 = require("path");
     var which = require_which();
     var getPathKey = require_path_key();
     function resolveCommandAttempt(parsed, withoutPathExt) {
@@ -27295,7 +27295,7 @@ var require_resolveCommand = __commonJS({
       try {
         resolved = which.sync(parsed.command, {
           path: env[getPathKey({ env })],
-          pathExt: withoutPathExt ? path11.delimiter : void 0
+          pathExt: withoutPathExt ? path12.delimiter : void 0
         });
       } catch (e) {
       } finally {
@@ -27304,7 +27304,7 @@ var require_resolveCommand = __commonJS({
         }
       }
       if (resolved) {
-        resolved = path11.resolve(hasCustomCwd ? parsed.options.cwd : "", resolved);
+        resolved = path12.resolve(hasCustomCwd ? parsed.options.cwd : "", resolved);
       }
       return resolved;
     }
@@ -27358,8 +27358,8 @@ var require_shebang_command = __commonJS({
       if (!match) {
         return null;
       }
-      const [path11, argument] = match[0].replace(/#! ?/, "").split(" ");
-      const binary = path11.split("/").pop();
+      const [path12, argument] = match[0].replace(/#! ?/, "").split(" ");
+      const binary = path12.split("/").pop();
       if (binary === "env") {
         return argument;
       }
@@ -27372,16 +27372,16 @@ var require_shebang_command = __commonJS({
 var require_readShebang = __commonJS({
   "node_modules/cross-spawn/lib/util/readShebang.js"(exports, module2) {
     "use strict";
-    var fs12 = require("fs");
+    var fs13 = require("fs");
     var shebangCommand = require_shebang_command();
     function readShebang(command) {
       const size = 150;
       const buffer = Buffer.alloc(size);
       let fd;
       try {
-        fd = fs12.openSync(command, "r");
-        fs12.readSync(fd, buffer, 0, size, 0);
-        fs12.closeSync(fd);
+        fd = fs13.openSync(command, "r");
+        fs13.readSync(fd, buffer, 0, size, 0);
+        fs13.closeSync(fd);
       } catch (e) {
       }
       return shebangCommand(buffer.toString());
@@ -27394,7 +27394,7 @@ var require_readShebang = __commonJS({
 var require_parse = __commonJS({
   "node_modules/cross-spawn/lib/parse.js"(exports, module2) {
     "use strict";
-    var path11 = require("path");
+    var path12 = require("path");
     var resolveCommand2 = require_resolveCommand();
     var escape2 = require_escape();
     var readShebang = require_readShebang();
@@ -27419,7 +27419,7 @@ var require_parse = __commonJS({
       const needsShell = !isExecutableRegExp.test(commandFile);
       if (parsed.options.forceShell || needsShell) {
         const needsDoubleEscapeMetaChars = isCmdShimRegExp.test(commandFile);
-        parsed.command = path11.normalize(parsed.command);
+        parsed.command = path12.normalize(parsed.command);
         parsed.command = escape2.command(parsed.command);
         parsed.args = parsed.args.map((arg) => escape2.argument(arg, needsDoubleEscapeMetaChars));
         const shellCommand = [parsed.command].concat(parsed.args).join(" ");
@@ -31486,8 +31486,8 @@ function getErrorMap() {
 
 // node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path11, errorMaps, issueData } = params;
-  const fullPath = [...path11, ...issueData.path || []];
+  const { data, path: path12, errorMaps, issueData } = params;
+  const fullPath = [...path12, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -31602,11 +31602,11 @@ var errorUtil;
 
 // node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path11, key) {
+  constructor(parent, value, path12, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path11;
+    this._path = path12;
     this._key = key;
   }
   get path() {
@@ -38730,11 +38730,11 @@ var EventSource = class extends EventTarget {
         return;
       }
       const decoder = new TextDecoder(), reader = body.getReader();
-      let open = true;
+      let open2 = true;
       do {
         const { done, value } = await reader.read();
-        value && __privateGet2(this, _parser).feed(decoder.decode(value, { stream: !done })), done && (open = false, __privateGet2(this, _parser).reset(), __privateMethod2(this, _EventSource_instances, scheduleReconnect_fn).call(this));
-      } while (open);
+        value && __privateGet2(this, _parser).feed(decoder.decode(value, { stream: !done })), done && (open2 = false, __privateGet2(this, _parser).reset(), __privateMethod2(this, _EventSource_instances, scheduleReconnect_fn).call(this));
+      } while (open2);
     }), __privateAdd2(this, _onFetchError, (err) => {
       __privateSet2(this, _controller, void 0), !(err.name === "AbortError" || err.type === "aborted") && __privateMethod2(this, _EventSource_instances, scheduleReconnect_fn).call(this, flattenError2(err));
     }), __privateAdd2(this, _onEvent, (event) => {
@@ -41693,6 +41693,15 @@ function isWriteEditTool(toolName) {
 
 // src/core/storage/SessionStorage.ts
 var SESSIONS_PATH = ".codian/obsidian/sessions";
+var DEFAULT_LEGACY_PREVIEW = "Conversation";
+var DEFAULT_NATIVE_PREVIEW = "SDK session";
+function buildConversationPreview(messages) {
+  const firstUserMsg = messages.find((msg) => msg.role === "user");
+  if (!firstUserMsg) {
+    return "New conversation";
+  }
+  return firstUserMsg.content.substring(0, 50) + (firstUserMsg.content.length > 50 ? "..." : "");
+}
 function isValidSessionMetadata(value) {
   if (!value || typeof value !== "object") {
     return false;
@@ -41724,6 +41733,7 @@ var SessionStorage = class {
   async deleteConversation(id) {
     try {
       await this.adapter.delete(this.getFilePath(id));
+      await this.deleteMetadata(id);
     } catch (e) {
     }
   }
@@ -41769,32 +41779,140 @@ var SessionStorage = class {
     conversations.sort((a, b) => b.updatedAt - a.updatedAt);
     return { conversations, failedCount };
   }
+  async loadAllConversationShells() {
+    const conversations = [];
+    let failedCount = 0;
+    const metadataById = await this.loadAllMetadataById();
+    const jsonlFilesById = await this.listSessionJsonlFilesById();
+    for (const [id, candidatePaths] of jsonlFilesById.entries()) {
+      const supplementalMeta = metadataById.get(id);
+      if (supplementalMeta) {
+        conversations.push(this.buildConversationShell(supplementalMeta, {
+          isNative: false,
+          messagesLoaded: false
+        }));
+        metadataById.delete(id);
+        continue;
+      }
+      let loaded = false;
+      for (const filePath of candidatePaths) {
+        try {
+          const header = await this.loadMetaRecordFromHeader(filePath);
+          if (header) {
+            conversations.push(this.buildConversationShell(header, {
+              isNative: false,
+              messagesLoaded: false
+            }));
+            loaded = true;
+            break;
+          }
+        } catch (e) {
+        }
+      }
+      if (!loaded) {
+        failedCount++;
+      }
+    }
+    for (const [id, meta3] of metadataById.entries()) {
+      if (jsonlFilesById.has(id)) continue;
+      conversations.push(this.buildConversationShell(meta3, {
+        isNative: true,
+        messagesLoaded: true
+      }));
+    }
+    conversations.sort((a, b) => {
+      var _a3, _b;
+      return ((_a3 = b.lastResponseAt) != null ? _a3 : b.updatedAt) - ((_b = a.lastResponseAt) != null ? _b : a.updatedAt);
+    });
+    return { conversations, failedCount };
+  }
   async hasSessions() {
     return (await this.listSessionJsonlFilesById()).size > 0;
   }
   getFilePath(id) {
     return `${SESSIONS_PATH}/${id}.jsonl`;
   }
+  parseMetaRecord(line) {
+    try {
+      const record2 = JSON.parse(line);
+      if (record2.type !== "meta") return null;
+      return record2;
+    } catch (e) {
+      return null;
+    }
+  }
+  async loadMetaRecordFromHeader(filePath) {
+    const firstLine = await this.adapter.readFirstLine(filePath);
+    if (!firstLine) return null;
+    return this.parseMetaRecord(firstLine);
+  }
+  buildConversationShell(record2, options) {
+    var _a3, _b, _c;
+    return {
+      id: record2.id,
+      title: record2.title,
+      createdAt: record2.createdAt,
+      updatedAt: record2.updatedAt,
+      lastResponseAt: record2.lastResponseAt,
+      sessionId: (_a3 = record2.sessionId) != null ? _a3 : null,
+      sdkSessionId: record2.sdkSessionId,
+      previousSdkSessionIds: record2.previousSdkSessionIds,
+      messages: [],
+      currentNote: record2.currentNote,
+      externalContextPaths: record2.externalContextPaths,
+      enabledMcpServers: record2.enabledMcpServers,
+      usage: record2.usage,
+      titleGenerationStatus: record2.titleGenerationStatus,
+      isNative: options.isNative ? true : void 0,
+      legacyCutoffAt: record2.legacyCutoffAt,
+      subagentData: record2.subagentData,
+      resumeSessionAt: record2.resumeSessionAt,
+      forkSource: record2.forkSource,
+      preview: (_b = record2.preview) != null ? _b : options.isNative ? DEFAULT_NATIVE_PREVIEW : DEFAULT_LEGACY_PREVIEW,
+      messageCount: (_c = record2.messageCount) != null ? _c : 0,
+      messagesLoaded: options.messagesLoaded
+    };
+  }
+  async loadAllMetadataById() {
+    const metadataById = /* @__PURE__ */ new Map();
+    try {
+      const files = await this.adapter.listFiles(SESSIONS_PATH);
+      const metaFiles = files.filter((filePath) => filePath.endsWith(".meta.json"));
+      for (const filePath of metaFiles) {
+        try {
+          const content = await this.adapter.read(filePath);
+          const meta3 = JSON.parse(content);
+          if (!isValidSessionMetadata(meta3)) continue;
+          metadataById.set(meta3.id, meta3);
+        } catch (e) {
+        }
+      }
+    } catch (e) {
+    }
+    return metadataById;
+  }
   async loadMetaOnly(filePath) {
+    var _a3, _b;
     const content = await this.adapter.read(filePath);
     const firstLine = content.split(/\r?\n/)[0];
     if (!firstLine) return null;
     try {
-      const record2 = JSON.parse(firstLine);
-      if (record2.type !== "meta") return null;
+      const record2 = this.parseMetaRecord(firstLine);
+      if (!record2) return null;
       const lines = content.split(/\r?\n/).filter((l) => l.trim());
-      const messageCount = lines.length - 1;
-      let preview = "New conversation";
-      for (let i = 1; i < lines.length; i++) {
-        try {
-          const msgRecord = JSON.parse(lines[i]);
-          if (msgRecord.type === "message" && msgRecord.message.role === "user") {
-            const content2 = msgRecord.message.content;
-            preview = content2.substring(0, 50) + (content2.length > 50 ? "..." : "");
-            break;
+      const messageCount = (_a3 = record2.messageCount) != null ? _a3 : lines.length - 1;
+      let preview = (_b = record2.preview) != null ? _b : "New conversation";
+      if (!record2.preview) {
+        for (let i = 1; i < lines.length; i++) {
+          try {
+            const msgRecord = JSON.parse(lines[i]);
+            if (msgRecord.type === "message" && msgRecord.message.role === "user") {
+              preview = buildConversationPreview([msgRecord.message]);
+              break;
+            }
+          } catch (e) {
+            continue;
           }
-        } catch (e) {
-          continue;
         }
       }
       return {
@@ -41812,6 +41930,7 @@ var SessionStorage = class {
     }
   }
   parseJSONL(content) {
+    var _a3, _b;
     const lines = content.split(/\r?\n/).filter((l) => l.trim());
     if (lines.length === 0) return null;
     let meta3 = null;
@@ -41828,6 +41947,8 @@ var SessionStorage = class {
       }
     }
     if (!meta3) return null;
+    const preview = (_a3 = meta3.preview) != null ? _a3 : buildConversationPreview(messages);
+    const messageCount = (_b = meta3.messageCount) != null ? _b : messages.length;
     return {
       id: meta3.id,
       title: meta3.title,
@@ -41846,11 +41967,17 @@ var SessionStorage = class {
       legacyCutoffAt: meta3.legacyCutoffAt,
       subagentData: meta3.subagentData,
       resumeSessionAt: meta3.resumeSessionAt,
-      forkSource: meta3.forkSource
+      forkSource: meta3.forkSource,
+      preview,
+      messageCount,
+      messagesLoaded: true
     };
   }
   serializeToJSONL(conversation) {
+    var _a3, _b;
     const lines = [];
+    const preview = (_a3 = conversation.preview) != null ? _a3 : buildConversationPreview(conversation.messages);
+    const messageCount = (_b = conversation.messageCount) != null ? _b : conversation.messages.length;
     const meta3 = {
       type: "meta",
       id: conversation.id,
@@ -41869,7 +41996,9 @@ var SessionStorage = class {
       legacyCutoffAt: conversation.legacyCutoffAt,
       subagentData: Object.keys(this.extractSubagentData(conversation.messages)).length > 0 ? this.extractSubagentData(conversation.messages) : conversation.subagentData,
       resumeSessionAt: conversation.resumeSessionAt,
-      forkSource: conversation.forkSource
+      forkSource: conversation.forkSource,
+      preview,
+      messageCount
     };
     lines.push(JSON.stringify(meta3));
     for (const message of conversation.messages) {
@@ -41947,6 +42076,7 @@ var SessionStorage = class {
    * Legacy conversations take precedence if both exist.
    */
   async listAllConversations() {
+    var _a3, _b;
     const metas = [];
     const legacyMetas = await this.listConversations();
     metas.push(...legacyMetas);
@@ -41960,10 +42090,8 @@ var SessionStorage = class {
           createdAt: meta3.createdAt,
           updatedAt: meta3.updatedAt,
           lastResponseAt: meta3.lastResponseAt,
-          messageCount: 0,
-          // Native sessions don't track message count in metadata
-          preview: "SDK session",
-          // SDK stores messages, we don't parse them for preview
+          messageCount: (_a3 = meta3.messageCount) != null ? _a3 : 0,
+          preview: (_b = meta3.preview) != null ? _b : DEFAULT_NATIVE_PREVIEW,
           titleGenerationStatus: meta3.titleGenerationStatus,
           isNative: true
         });
@@ -41971,13 +42099,16 @@ var SessionStorage = class {
     }
     return metas.sort(
       (a, b) => {
-        var _a3, _b;
-        return ((_a3 = b.lastResponseAt) != null ? _a3 : b.createdAt) - ((_b = a.lastResponseAt) != null ? _b : a.createdAt);
+        var _a4, _b2;
+        return ((_a4 = b.lastResponseAt) != null ? _a4 : b.createdAt) - ((_b2 = a.lastResponseAt) != null ? _b2 : a.createdAt);
       }
     );
   }
   toSessionMetadata(conversation) {
+    var _a3, _b;
     const subagentData = this.extractSubagentData(conversation.messages);
+    const preview = (_a3 = conversation.preview) != null ? _a3 : buildConversationPreview(conversation.messages);
+    const messageCount = (_b = conversation.messageCount) != null ? _b : conversation.messages.length;
     return {
       id: conversation.id,
       title: conversation.title,
@@ -41995,7 +42126,9 @@ var SessionStorage = class {
       legacyCutoffAt: conversation.legacyCutoffAt,
       subagentData: Object.keys(subagentData).length > 0 ? subagentData : void 0,
       resumeSessionAt: conversation.resumeSessionAt,
-      forkSource: conversation.forkSource
+      forkSource: conversation.forkSource,
+      preview,
+      messageCount
     };
   }
   /**
@@ -42179,44 +42312,84 @@ var SlashCommandStorage = class {
 var import_obsidian2 = require("obsidian");
 
 // src/core/storage/VaultFileAdapter.ts
+var fs4 = __toESM(require("fs/promises"));
+var path4 = __toESM(require("path"));
 var VaultFileAdapter = class {
   constructor(app) {
     this.app = app;
     this.writeQueue = Promise.resolve();
   }
-  async exists(path11) {
-    return this.app.vault.adapter.exists(path11);
+  async exists(path12) {
+    return this.app.vault.adapter.exists(path12);
   }
-  async read(path11) {
-    return this.app.vault.adapter.read(path11);
+  async read(path12) {
+    return this.app.vault.adapter.read(path12);
   }
-  async write(path11, content) {
-    await this.ensureParentFolder(path11);
-    await this.app.vault.adapter.write(path11, content);
+  async readFirstLine(filePath) {
+    var _a3, _b;
+    const absolutePath = this.getAbsolutePath(filePath);
+    if (!absolutePath) {
+      const content = await this.read(filePath);
+      return (_a3 = content.split(/\r?\n/, 1)[0]) != null ? _a3 : "";
+    }
+    let handle = null;
+    try {
+      handle = await fs4.open(absolutePath, "r");
+      const chunks = [];
+      const buffer = Buffer.alloc(4096);
+      let keepReading = true;
+      while (keepReading) {
+        const { bytesRead } = await handle.read(buffer, 0, buffer.length, null);
+        if (bytesRead <= 0) {
+          break;
+        }
+        const chunk = buffer.subarray(0, bytesRead);
+        const newlineIndex = chunk.indexOf(10);
+        if (newlineIndex >= 0) {
+          chunks.push(chunk.subarray(0, newlineIndex));
+          keepReading = false;
+          continue;
+        }
+        chunks.push(chunk);
+        if (bytesRead < buffer.length) {
+          keepReading = false;
+        }
+      }
+      return Buffer.concat(chunks).toString("utf8").replace(/\r$/, "");
+    } catch (e) {
+      const content = await this.read(filePath);
+      return (_b = content.split(/\r?\n/, 1)[0]) != null ? _b : "";
+    } finally {
+      await (handle == null ? void 0 : handle.close().catch(() => void 0));
+    }
   }
-  async append(path11, content) {
-    await this.ensureParentFolder(path11);
+  async write(path12, content) {
+    await this.ensureParentFolder(path12);
+    await this.app.vault.adapter.write(path12, content);
+  }
+  async append(path12, content) {
+    await this.ensureParentFolder(path12);
     this.writeQueue = this.writeQueue.then(async () => {
-      if (await this.exists(path11)) {
-        const existing = await this.read(path11);
-        await this.app.vault.adapter.write(path11, existing + content);
+      if (await this.exists(path12)) {
+        const existing = await this.read(path12);
+        await this.app.vault.adapter.write(path12, existing + content);
       } else {
-        await this.app.vault.adapter.write(path11, content);
+        await this.app.vault.adapter.write(path12, content);
       }
     }).catch(() => {
     });
     await this.writeQueue;
   }
-  async delete(path11) {
-    if (await this.exists(path11)) {
-      await this.app.vault.adapter.remove(path11);
+  async delete(path12) {
+    if (await this.exists(path12)) {
+      await this.app.vault.adapter.remove(path12);
     }
   }
   /** Fails silently if non-empty or missing. */
-  async deleteFolder(path11) {
+  async deleteFolder(path12) {
     try {
-      if (await this.exists(path11)) {
-        await this.app.vault.adapter.rmdir(path11, false);
+      if (await this.exists(path12)) {
+        await this.app.vault.adapter.rmdir(path12, false);
       }
     } catch (e) {
     }
@@ -42257,9 +42430,9 @@ var VaultFileAdapter = class {
     }
   }
   /** Ensure a folder exists, creating it and parent folders if needed. */
-  async ensureFolder(path11) {
-    if (await this.exists(path11)) return;
-    const parts = path11.split("/").filter(Boolean);
+  async ensureFolder(path12) {
+    if (await this.exists(path12)) return;
+    const parts = path12.split("/").filter(Boolean);
     let current = "";
     for (const part of parts) {
       current = current ? `${current}/${part}` : part;
@@ -42272,14 +42445,21 @@ var VaultFileAdapter = class {
   async rename(oldPath, newPath) {
     await this.app.vault.adapter.rename(oldPath, newPath);
   }
-  async stat(path11) {
+  async stat(path12) {
     try {
-      const stat = await this.app.vault.adapter.stat(path11);
+      const stat = await this.app.vault.adapter.stat(path12);
       if (!stat) return null;
       return { mtime: stat.mtime, size: stat.size };
     } catch (e) {
       return null;
     }
+  }
+  getAbsolutePath(filePath) {
+    const adapter = this.app.vault.adapter;
+    if (typeof adapter.basePath !== "string" || adapter.basePath.length === 0) {
+      return null;
+    }
+    return path4.join(adapter.basePath, ...filePath.split("/"));
   }
 };
 
@@ -42626,8 +42806,8 @@ var import_obsidian24 = require("obsidian");
 // src/core/agent/CodianService.ts
 var import_child_process2 = require("child_process");
 var import_crypto = require("crypto");
-var fs4 = __toESM(require("fs"));
-var path4 = __toESM(require("path"));
+var fs5 = __toESM(require("fs"));
+var path5 = __toESM(require("path"));
 
 // src/utils/codexConfig.ts
 var UNSUPPORTED_CODEX_AUTH_ENV_KEYS = [
@@ -43729,7 +43909,7 @@ ${systemPrompt}
         return { command, prefixArgs };
       }
       if (nodePath2) {
-        prefixArgs.push(path4.basename(nodePath2));
+        prefixArgs.push(path5.basename(nodePath2));
       }
       prefixArgs.push(targetCli);
       return { command, prefixArgs };
@@ -44256,22 +44436,22 @@ ${systemPrompt}
     if (!images || images.length === 0) {
       return [];
     }
-    const baseDir = path4.join(this.getVaultPath(), ...CODIAN_PRIVATE_DIR, "tmp", "images", turnId);
-    await fs4.promises.mkdir(baseDir, { recursive: true });
+    const baseDir = path5.join(this.getVaultPath(), ...CODIAN_PRIVATE_DIR, "tmp", "images", turnId);
+    await fs5.promises.mkdir(baseDir, { recursive: true });
     const written = [];
     for (let i = 0; i < images.length; i++) {
       const image = images[i];
       const ext = image.mediaType.split("/")[1] || "png";
       const safeName = image.name.replace(/[^a-zA-Z0-9._-]/g, "-") || `image-${i + 1}.${ext}`;
       const finalName = safeName.includes(".") ? safeName : `${safeName}.${ext}`;
-      const fullPath = path4.join(baseDir, finalName);
-      await fs4.promises.writeFile(fullPath, Buffer.from(image.data, "base64"));
+      const fullPath = path5.join(baseDir, finalName);
+      await fs5.promises.writeFile(fullPath, Buffer.from(image.data, "base64"));
       written.push(fullPath);
     }
     return written;
   }
   getTurnArtifactDir(turnId) {
-    return path4.join(this.getVaultPath(), ...CODIAN_PRIVATE_DIR, "rewind", turnId);
+    return path5.join(this.getVaultPath(), ...CODIAN_PRIVATE_DIR, "rewind", turnId);
   }
   async backupFileForTurn(artifact, toolName, input) {
     const filePath = getPathFromToolInput(toolName, input);
@@ -44279,14 +44459,14 @@ ${systemPrompt}
       return;
     }
     const normalized = normalizePathForFilesystem(filePath);
-    const absolute = path4.isAbsolute(normalized) ? normalized : path4.join(this.getVaultPath(), normalized);
+    const absolute = path5.isAbsolute(normalized) ? normalized : path5.join(this.getVaultPath(), normalized);
     if (artifact.backups.some((entry) => entry.originalPath === absolute)) {
       return;
     }
-    await fs4.promises.mkdir(this.getTurnArtifactDir(artifact.turnId), { recursive: true });
-    const backupFile = path4.join(this.getTurnArtifactDir(artifact.turnId), `backup-${artifact.backups.length}`);
+    await fs5.promises.mkdir(this.getTurnArtifactDir(artifact.turnId), { recursive: true });
+    const backupFile = path5.join(this.getTurnArtifactDir(artifact.turnId), `backup-${artifact.backups.length}`);
     try {
-      await fs4.promises.copyFile(absolute, backupFile);
+      await fs5.promises.copyFile(absolute, backupFile);
       artifact.backups.push({
         originalPath: absolute,
         backupPath: backupFile,
@@ -44306,14 +44486,14 @@ ${systemPrompt}
     artifact.filesChanged.push(absolute);
   }
   async persistTurnArtifact(artifact) {
-    const manifestPath = path4.join(this.getTurnArtifactDir(artifact.turnId), "manifest.json");
-    await fs4.promises.mkdir(path4.dirname(manifestPath), { recursive: true });
-    await fs4.promises.writeFile(manifestPath, JSON.stringify(artifact, null, 2));
+    const manifestPath = path5.join(this.getTurnArtifactDir(artifact.turnId), "manifest.json");
+    await fs5.promises.mkdir(path5.dirname(manifestPath), { recursive: true });
+    await fs5.promises.writeFile(manifestPath, JSON.stringify(artifact, null, 2));
   }
   async loadTurnArtifact(turnId) {
-    const manifestPath = path4.join(this.getTurnArtifactDir(turnId), "manifest.json");
+    const manifestPath = path5.join(this.getTurnArtifactDir(turnId), "manifest.json");
     try {
-      const raw = await fs4.promises.readFile(manifestPath, "utf8");
+      const raw = await fs5.promises.readFile(manifestPath, "utf8");
       return JSON.parse(raw);
     } catch (e) {
     }
@@ -44322,12 +44502,12 @@ ${systemPrompt}
   async restoreTurnArtifact(artifact) {
     for (const entry of artifact.backups) {
       if (!entry.existedBefore) {
-        await fs4.promises.rm(entry.originalPath, { recursive: true, force: true });
+        await fs5.promises.rm(entry.originalPath, { recursive: true, force: true });
         continue;
       }
-      await fs4.promises.mkdir(path4.dirname(entry.originalPath), { recursive: true });
+      await fs5.promises.mkdir(path5.dirname(entry.originalPath), { recursive: true });
       if (entry.backupPath) {
-        await fs4.promises.copyFile(entry.backupPath, entry.originalPath);
+        await fs5.promises.copyFile(entry.backupPath, entry.originalPath);
       }
     }
   }
@@ -44396,18 +44576,18 @@ ${systemPrompt}
       return;
     }
     const normalized = normalizePathForFilesystem(filePath);
-    const absolute = path4.isAbsolute(normalized) ? normalized : path4.join(this.getVaultPath(), normalized);
+    const absolute = path5.isAbsolute(normalized) ? normalized : path5.join(this.getVaultPath(), normalized);
     if (artifact.backups.some((entry) => entry.originalPath === absolute)) {
       return;
     }
     artifact.filesChanged.push(absolute);
-    await fs4.promises.mkdir(this.getTurnArtifactDir(artifact.turnId), { recursive: true });
+    await fs5.promises.mkdir(this.getTurnArtifactDir(artifact.turnId), { recursive: true });
     if (!snapshot) {
       artifact.opaqueSideEffects = true;
       return;
     }
-    const relativePath = path4.relative(snapshot.repoRoot, absolute).replace(/\\/g, "/");
-    const isWithinRepo = !!relativePath && !relativePath.startsWith("..") && !path4.isAbsolute(relativePath);
+    const relativePath = path5.relative(snapshot.repoRoot, absolute).replace(/\\/g, "/");
+    const isWithinRepo = !!relativePath && !relativePath.startsWith("..") && !path5.isAbsolute(relativePath);
     const canRestoreFromGit = isWithinRepo && snapshot.hasHead && !snapshot.dirtyPaths.has(relativePath);
     if (!canRestoreFromGit) {
       artifact.opaqueSideEffects = true;
@@ -44421,14 +44601,14 @@ ${systemPrompt}
       });
       return;
     }
-    const backupFile = path4.join(this.getTurnArtifactDir(artifact.turnId), `backup-${artifact.backups.length}`);
+    const backupFile = path5.join(this.getTurnArtifactDir(artifact.turnId), `backup-${artifact.backups.length}`);
     try {
       const previousContent = (0, import_child_process2.execFileSync)("git", ["show", `HEAD:${relativePath}`], {
         cwd: snapshot.repoRoot,
         encoding: "buffer",
         stdio: ["ignore", "pipe", "ignore"]
       });
-      await fs4.promises.writeFile(backupFile, previousContent);
+      await fs5.promises.writeFile(backupFile, previousContent);
       artifact.backups.push({
         originalPath: absolute,
         backupPath: backupFile,
@@ -48758,9 +48938,9 @@ var IMAGE_EXTENSIONS = /* @__PURE__ */ new Set([
   "ico"
 ]);
 var IMAGE_EMBED_PATTERN = /!\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
-function isImagePath(path11) {
+function isImagePath(path12) {
   var _a3;
-  const ext = (_a3 = path11.split(".").pop()) == null ? void 0 : _a3.toLowerCase();
+  const ext = (_a3 = path12.split(".").pop()) == null ? void 0 : _a3.toLowerCase();
   return ext ? IMAGE_EXTENSIONS.has(ext) : false;
 }
 function resolveImageFile(app, imagePath, mediaFolder) {
@@ -52649,8 +52829,8 @@ var InlineExitPlanMode = class {
       return null;
     }
     try {
-      const fs12 = require("fs");
-      const content = fs12.readFileSync(planFilePath, "utf-8");
+      const fs13 = require("fs");
+      const content = fs13.readFileSync(planFilePath, "utf-8");
       return content.trim() || null;
     } catch (err) {
       this.planReadError = err instanceof Error ? err.message : "unknown error";
@@ -54062,9 +54242,9 @@ function diffFromToolInput(toolCall, filePath) {
 
 // src/utils/sdkSession.ts
 var import_fs = require("fs");
-var fs5 = __toESM(require("fs/promises"));
+var fs6 = __toESM(require("fs/promises"));
 var os4 = __toESM(require("os"));
-var path5 = __toESM(require("path"));
+var path6 = __toESM(require("path"));
 
 // src/core/sdk/toolResultContent.ts
 function extractToolResultContent(content, options) {
@@ -54122,11 +54302,11 @@ function extractFinalResultFromSubagentJsonl(content) {
 
 // src/utils/sdkSession.ts
 function encodeVaultPathForSDK(vaultPath) {
-  const absolutePath = path5.resolve(vaultPath);
+  const absolutePath = path6.resolve(vaultPath);
   return absolutePath.replace(/[^a-zA-Z0-9]/g, "-");
 }
 function getSDKProjectsPath() {
-  return path5.join(os4.homedir(), ".codex", "sessions");
+  return path6.join(os4.homedir(), ".codex", "sessions");
 }
 function isValidAgentId(agentId) {
   if (!agentId || agentId.length > 128) {
@@ -54231,7 +54411,7 @@ function getSubagentSidecarPath(vaultPath, sessionId, agentId) {
     return null;
   }
   const encodedVault = encodeVaultPathForSDK(vaultPath);
-  return path5.join(
+  return path6.join(
     getSDKProjectsPath(),
     encodedVault,
     sessionId,
@@ -54244,7 +54424,7 @@ async function loadSubagentToolCalls(vaultPath, sessionId, agentId) {
   if (!subagentFilePath) return [];
   try {
     if (!(0, import_fs.existsSync)(subagentFilePath)) return [];
-    const content = await fs5.readFile(subagentFilePath, "utf-8");
+    const content = await fs6.readFile(subagentFilePath, "utf-8");
     const lines = content.split("\n").filter((line) => line.trim());
     const events = [];
     const seen = /* @__PURE__ */ new Set();
@@ -54273,7 +54453,7 @@ async function loadSubagentFinalResult(vaultPath, sessionId, agentId) {
   if (!subagentFilePath) return null;
   try {
     if (!(0, import_fs.existsSync)(subagentFilePath)) return null;
-    const content = await fs5.readFile(subagentFilePath, "utf-8");
+    const content = await fs6.readFile(subagentFilePath, "utf-8");
     return extractFinalResultFromSubagentJsonl(content);
   } catch (e) {
     return null;
@@ -55250,7 +55430,7 @@ Output: I'm not sure what you're referring to. Could you please clarify?`;
 
 // src/utils/codexCli.ts
 var import_child_process5 = require("child_process");
-var path6 = __toESM(require("path"));
+var path7 = __toESM(require("path"));
 var import_readline = require("readline");
 function isBareCommandName2(command) {
   return !!command && !/[\\/]/.test(command) && !/^[a-zA-Z]:/.test(command);
@@ -55321,7 +55501,7 @@ function resolveCommand(plugin, cliPath, envPath, runtimeCwd, wslEnv) {
       return { command, prefixArgs };
     }
     if (nodePath2) {
-      prefixArgs.push(path6.basename(nodePath2));
+      prefixArgs.push(path7.basename(nodePath2));
     }
     prefixArgs.push(targetCli);
     return { command, prefixArgs };
@@ -56952,7 +57132,7 @@ var import_obsidian19 = require("obsidian");
 var import_obsidian16 = require("obsidian");
 
 // src/utils/externalContext.ts
-var fs6 = __toESM(require("fs"));
+var fs7 = __toESM(require("fs"));
 function normalizePathForComparison2(p) {
   return normalizePathForComparison(p);
 }
@@ -57011,7 +57191,7 @@ function buildExternalContextDisplayEntries(externalContexts) {
 }
 function validateDirectoryPath(p) {
   try {
-    const stats = fs6.statSync(p);
+    const stats = fs7.statSync(p);
     if (!stats.isDirectory()) {
       return { valid: false, error: "Path exists but is not a directory" };
     }
@@ -57039,8 +57219,8 @@ function isDuplicatePath(newPath, existingPaths) {
 }
 
 // src/utils/externalContextScanner.ts
-var fs7 = __toESM(require("fs"));
-var path7 = __toESM(require("path"));
+var fs8 = __toESM(require("fs"));
+var path8 = __toESM(require("path"));
 var CACHE_TTL_MS = 3e4;
 var MAX_FILES_PER_PATH = 1e3;
 var MAX_DEPTH = 10;
@@ -57085,25 +57265,25 @@ var ExternalContextScanner = class {
     if (depth > MAX_DEPTH) return [];
     const files = [];
     try {
-      if (!fs7.existsSync(dir)) return [];
-      const stat = fs7.statSync(dir);
+      if (!fs8.existsSync(dir)) return [];
+      const stat = fs8.statSync(dir);
       if (!stat.isDirectory()) return [];
-      const entries = fs7.readdirSync(dir, { withFileTypes: true });
+      const entries = fs8.readdirSync(dir, { withFileTypes: true });
       for (const entry of entries) {
         if (entry.name.startsWith(".")) continue;
         if (SKIP_DIRECTORIES.has(entry.name)) continue;
         if (entry.isSymbolicLink()) continue;
-        const fullPath = path7.join(dir, entry.name);
+        const fullPath = path8.join(dir, entry.name);
         if (entry.isDirectory()) {
           const subFiles = this.scanDirectory(fullPath, contextRoot, depth + 1);
           files.push(...subFiles);
         } else if (entry.isFile()) {
           try {
-            const fileStat = fs7.statSync(fullPath);
+            const fileStat = fs8.statSync(fullPath);
             files.push({
               path: fullPath,
               name: entry.name,
-              relativePath: path7.relative(contextRoot, fullPath),
+              relativePath: path8.relative(contextRoot, fullPath),
               contextRoot,
               mtime: fileStat.mtimeMs
             });
@@ -57995,11 +58175,11 @@ var FileContextState = class {
       this.attachedFiles.add(file2);
     }
   }
-  attachFile(path11) {
-    this.attachedFiles.add(path11);
+  attachFile(path12) {
+    this.attachedFiles.add(path12);
   }
-  detachFile(path11) {
-    this.attachedFiles.delete(path11);
+  detachFile(path12) {
+    this.attachedFiles.delete(path12);
   }
   clearAttachments() {
     this.attachedFiles.clear();
@@ -58369,7 +58549,7 @@ var FileContextManager = class {
 
 // src/features/chat/ui/ImageContext.ts
 var import_obsidian20 = require("obsidian");
-var path8 = __toESM(require("path"));
+var path9 = __toESM(require("path"));
 var MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 var IMAGE_EXTENSIONS2 = {
   ".jpg": "image/jpeg",
@@ -58508,7 +58688,7 @@ var ImageContextManager = class {
     return file2.type.startsWith("image/") && this.getMediaType(file2.name) !== null;
   }
   getMediaType(filename) {
-    const ext = path8.extname(filename).toLowerCase();
+    const ext = path9.extname(filename).toLowerCase();
     return IMAGE_EXTENSIONS2[ext] || null;
   }
   async addImageFromFile(file2, source) {
@@ -58618,7 +58798,7 @@ var ImageContextManager = class {
   }
   truncateName(name, maxLen) {
     if (name.length <= maxLen) return name;
-    const ext = path8.extname(name);
+    const ext = path9.extname(name);
     const base = name.slice(0, name.length - ext.length);
     const truncatedBase = base.slice(0, maxLen - ext.length - 3);
     return `${truncatedBase}...${ext}`;
@@ -58643,7 +58823,7 @@ var ImageContextManager = class {
 
 // src/features/chat/ui/InputToolbar.ts
 var import_obsidian21 = require("obsidian");
-var path9 = __toESM(require("path"));
+var path10 = __toESM(require("path"));
 
 // src/utils/modelCatalog.ts
 function cloneDefaultModels() {
@@ -58889,24 +59069,24 @@ var ExternalContextSelector = class {
       (_a3 = this.onPersistenceChangeCallback) == null ? void 0 : _a3.call(this, [...this.persistentPaths]);
     }
   }
-  togglePersistence(path11) {
+  togglePersistence(path12) {
     var _a3;
-    if (this.persistentPaths.has(path11)) {
-      this.persistentPaths.delete(path11);
+    if (this.persistentPaths.has(path12)) {
+      this.persistentPaths.delete(path12);
     } else {
-      if (!isValidDirectoryPath(path11)) {
-        new import_obsidian21.Notice(`Cannot persist "${this.shortenPath(path11)}" - directory no longer exists`, 4e3);
+      if (!isValidDirectoryPath(path12)) {
+        new import_obsidian21.Notice(`Cannot persist "${this.shortenPath(path12)}" - directory no longer exists`, 4e3);
         return;
       }
-      this.persistentPaths.add(path11);
+      this.persistentPaths.add(path12);
     }
     (_a3 = this.onPersistenceChangeCallback) == null ? void 0 : _a3.call(this, [...this.persistentPaths]);
     this.renderDropdown();
   }
   mergePersistentPaths() {
     const pathSet = new Set(this.externalContextPaths);
-    for (const path11 of this.persistentPaths) {
-      pathSet.add(path11);
+    for (const path12 of this.persistentPaths) {
+      pathSet.add(path12);
     }
     this.externalContextPaths = [...pathSet];
   }
@@ -58953,7 +59133,7 @@ var ExternalContextSelector = class {
     }
     const expandedPath = expandHomePath(cleanPath);
     const normalizedPath = normalizePathForFilesystem(expandedPath);
-    if (!path9.isAbsolute(normalizedPath)) {
+    if (!path10.isAbsolute(normalizedPath)) {
       return { success: false, error: "Path must be absolute. Usage: /add-dir /absolute/path" };
     }
     const validation = validateDirectoryPath(normalizedPath);
@@ -62859,7 +63039,7 @@ var InlineEditController = class {
 };
 
 // src/features/settings/CodianSettings.ts
-var fs8 = __toESM(require("fs"));
+var fs9 = __toESM(require("fs"));
 var import_obsidian35 = require("obsidian");
 
 // src/features/settings/keyboardNavigation.ts
@@ -65017,10 +65197,10 @@ var CodianSettingTab = class extends import_obsidian35.PluginSettingTab {
         return null;
       }
       const expandedPath = expandHomePath(trimmed);
-      if (!fs8.existsSync(expandedPath)) {
+      if (!fs9.existsSync(expandedPath)) {
         return t("settings.cliPath.validation.notExist");
       }
-      const stat = fs8.statSync(expandedPath);
+      const stat = fs9.statSync(expandedPath);
       if (!stat.isFile()) {
         return t("settings.cliPath.validation.isDirectory");
       }
@@ -65186,7 +65366,7 @@ var CodianSettingTab = class extends import_obsidian35.PluginSettingTab {
 };
 
 // src/utils/codexAcpResolver.ts
-var fs9 = __toESM(require("fs"));
+var fs10 = __toESM(require("fs"));
 var CodexAcpResolver = class {
   constructor() {
     this.resolvedPath = null;
@@ -65222,8 +65402,8 @@ function resolveCodexAcpPath(hostnamePath, legacyPath, envText) {
   if (trimmedHostname) {
     try {
       const expandedPath = expandHomePath(trimmedHostname);
-      if (fs9.existsSync(expandedPath)) {
-        const stat = fs9.statSync(expandedPath);
+      if (fs10.existsSync(expandedPath)) {
+        const stat = fs10.statSync(expandedPath);
         if (stat.isFile()) {
           return expandedPath;
         }
@@ -65235,8 +65415,8 @@ function resolveCodexAcpPath(hostnamePath, legacyPath, envText) {
   if (trimmedLegacy) {
     try {
       const expandedPath = expandHomePath(trimmedLegacy);
-      if (fs9.existsSync(expandedPath)) {
-        const stat = fs9.statSync(expandedPath);
+      if (fs10.existsSync(expandedPath)) {
+        const stat = fs10.statSync(expandedPath);
         if (stat.isFile()) {
           return expandedPath;
         }
@@ -65249,7 +65429,7 @@ function resolveCodexAcpPath(hostnamePath, legacyPath, envText) {
 }
 
 // src/utils/codexCliResolver.ts
-var fs10 = __toESM(require("fs"));
+var fs11 = __toESM(require("fs"));
 var CodexCliResolver = class {
   constructor() {
     this.resolvedPath = null;
@@ -65292,8 +65472,8 @@ function resolveCodexCliPath(hostnamePath, legacyPath, envText) {
   if (trimmedHostname) {
     try {
       const expandedPath = expandHomePath(trimmedHostname);
-      if (fs10.existsSync(expandedPath)) {
-        const stat = fs10.statSync(expandedPath);
+      if (fs11.existsSync(expandedPath)) {
+        const stat = fs11.statSync(expandedPath);
         if (stat.isFile()) {
           return expandedPath;
         }
@@ -65305,8 +65485,8 @@ function resolveCodexCliPath(hostnamePath, legacyPath, envText) {
   if (trimmedLegacy) {
     try {
       const expandedPath = expandHomePath(trimmedLegacy);
-      if (fs10.existsSync(expandedPath)) {
-        const stat = fs10.statSync(expandedPath);
+      if (fs11.existsSync(expandedPath)) {
+        const stat = fs11.statSync(expandedPath);
         if (stat.isFile()) {
           return expandedPath;
         }
@@ -65320,9 +65500,9 @@ function resolveCodexCliPath(hostnamePath, legacyPath, envText) {
 
 // src/utils/codexExternalResources.ts
 var import_child_process6 = require("child_process");
-var fs11 = __toESM(require("fs/promises"));
+var fs12 = __toESM(require("fs/promises"));
 var os5 = __toESM(require("os"));
-var path10 = __toESM(require("path"));
+var path11 = __toESM(require("path"));
 
 // node_modules/smol-toml/dist/error.js
 function getLineColFromPtr(string5, ptr) {
@@ -66036,7 +66216,7 @@ function shouldUseWsl(options) {
 function getNativeCodexHome(options) {
   var _a3;
   const envVars = parseEnvironmentVariables(options.environmentVariables || "");
-  return expandHomePath(((_a3 = envVars.CODEX_HOME) == null ? void 0 : _a3.trim()) || path10.join(os5.homedir(), ".codex"));
+  return expandHomePath(((_a3 = envVars.CODEX_HOME) == null ? void 0 : _a3.trim()) || path11.join(os5.homedir(), ".codex"));
 }
 function getRuntimeEnvironment(options) {
   return withProxyAliases(parseEnvironmentVariables(options.environmentVariables || ""));
@@ -66076,7 +66256,7 @@ async function runWslShell(options, script, ...scriptArgs) {
   return execFileText(resolveWindowsWslExecutable(), args);
 }
 function buildGlobalSkill(skillPath, content) {
-  const skillName = path10.basename(path10.dirname(skillPath));
+  const skillName = path11.basename(path11.dirname(skillPath));
   if (!skillName) return null;
   try {
     const parsed = parseSlashCommandContent(content);
@@ -66093,12 +66273,12 @@ async function collectExistingSkillPaths(skillRoots) {
   const existing = /* @__PURE__ */ new Set();
   for (const skillsDir of skillRoots) {
     try {
-      const entries = await fs11.readdir(skillsDir, { withFileTypes: true });
+      const entries = await fs12.readdir(skillsDir, { withFileTypes: true });
       for (const entry of entries) {
         if (!entry.isDirectory()) continue;
-        const skillPath = path10.join(skillsDir, entry.name, "SKILL.md");
+        const skillPath = path11.join(skillsDir, entry.name, "SKILL.md");
         try {
-          await fs11.access(skillPath);
+          await fs12.access(skillPath);
           existing.add(skillPath);
         } catch (e) {
         }
@@ -66110,8 +66290,8 @@ async function collectExistingSkillPaths(skillRoots) {
 }
 async function loadNativeGlobalSkillPaths(options) {
   return collectExistingSkillPaths([
-    path10.join(getNativeCodexHome(options), "skills"),
-    path10.join(os5.homedir(), ".agents", "skills")
+    path11.join(getNativeCodexHome(options), "skills"),
+    path11.join(os5.homedir(), ".agents", "skills")
   ]);
 }
 async function loadWslGlobalSkillPaths(options) {
@@ -66126,7 +66306,7 @@ async function readSkillContent(skillPath, options) {
     if (shouldUseWsl(options)) {
       return await runWslShell(options, 'cat "$1"', skillPath);
     }
-    return await fs11.readFile(skillPath, "utf8");
+    return await fs12.readFile(skillPath, "utf8");
   } catch (e) {
     return null;
   }
@@ -66153,8 +66333,8 @@ async function readConfigToml(options) {
       );
       return content || null;
     }
-    const configPath = path10.join(getNativeCodexHome(options), "config.toml");
-    return await fs11.readFile(configPath, "utf8");
+    const configPath = path11.join(getNativeCodexHome(options), "config.toml");
+    return await fs12.readFile(configPath, "utf8");
   } catch (e) {
     return null;
   }
@@ -66336,8 +66516,11 @@ var CodianPlugin = class extends import_obsidian36.Plugin {
     super(...arguments);
     this.conversations = [];
     this.runtimeEnvironmentVariables = "";
+    this.deferExternalResourceLoadUntilAfterStartup = false;
+    this.deferredExternalRefreshTimer = null;
   }
   async onload() {
+    this.deferExternalResourceLoadUntilAfterStartup = process.platform === "win32";
     await this.loadSettings();
     (0, import_obsidian36.addIcon)(PLUGIN_ICON_ID, PLUGIN_ICON_CONTENT);
     this.cliResolver = new CodexCliResolver();
@@ -66456,8 +66639,13 @@ var CodianPlugin = class extends import_obsidian36.Plugin {
       }
     });
     this.addSettingTab(new CodianSettingTab(this.app, this));
+    this.scheduleDeferredExternalRefresh();
   }
   async onunload() {
+    if (this.deferredExternalRefreshTimer) {
+      clearTimeout(this.deferredExternalRefreshTimer);
+      this.deferredExternalRefreshTimer = null;
+    }
     for (const view of this.getAllViews()) {
       const tabManager = view.getTabManager();
       if (tabManager) {
@@ -66508,7 +66696,7 @@ var CodianPlugin = class extends import_obsidian36.Plugin {
       this.settings.codexCliPath = "";
       didMigrateCliPath = true;
     }
-    const { conversations, failedCount } = await this.storage.sessions.loadAllConversations();
+    const { conversations, failedCount } = await this.storage.sessions.loadAllConversationShells();
     this.conversations = conversations.sort(
       (a, b) => {
         var _a4, _b2;
@@ -66538,7 +66726,7 @@ var CodianPlugin = class extends import_obsidian36.Plugin {
     }
     const conversationsToSave = /* @__PURE__ */ new Set([...backfilledConversations, ...invalidatedConversations]);
     for (const conv of conversationsToSave) {
-      await this.storage.sessions.saveConversation(conv);
+      await this.persistConversation(conv);
     }
   }
   backfillConversationResponseTimestamps() {
@@ -66669,9 +66857,47 @@ var CodianPlugin = class extends import_obsidian36.Plugin {
   getActiveEnvironmentVariables() {
     return this.runtimeEnvironmentVariables;
   }
+  shouldDeferStartupExternalResources() {
+    return process.platform === "win32" && this.deferExternalResourceLoadUntilAfterStartup;
+  }
+  scheduleDeferredExternalRefresh() {
+    if (!this.shouldDeferStartupExternalResources()) {
+      this.deferExternalResourceLoadUntilAfterStartup = false;
+      return;
+    }
+    this.deferredExternalRefreshTimer = setTimeout(() => {
+      this.deferredExternalRefreshTimer = null;
+      this.deferExternalResourceLoadUntilAfterStartup = false;
+      void this.refreshDeferredExternalResources();
+    }, 0);
+  }
+  async refreshDeferredExternalResources() {
+    try {
+      this.settings.slashCommands = await this.loadAllSlashCommands();
+    } catch (e) {
+    }
+    try {
+      await this.mcpManager.loadServers();
+      this.refreshOpenViewMcpManagers();
+    } catch (e) {
+    }
+  }
+  refreshOpenViewMcpManagers() {
+    var _a3;
+    for (const view of this.getAllViews()) {
+      const tabManager = view.getTabManager();
+      if (!tabManager) continue;
+      for (const tab of tabManager.getAllTabs()) {
+        (_a3 = tab.ui.mcpServerSelector) == null ? void 0 : _a3.setMcpManager(this.mcpManager);
+      }
+    }
+  }
   async loadAllSlashCommands() {
     var _a3;
     const localCommands = await this.storage.loadAllSlashCommands();
+    if (this.shouldDeferStartupExternalResources()) {
+      return localCommands;
+    }
     const externalSkills = await loadExternalCodexSkills({
       runtimeMode: process.platform === "win32" ? "wsl" : (_a3 = this.settings.codexRuntimeMode) != null ? _a3 : "native",
       wslDistribution: this.settings.wslDistribution,
@@ -66689,6 +66915,9 @@ var CodianPlugin = class extends import_obsidian36.Plugin {
       };
     });
     const projectServers = await loadProjectCodexMcpServers(this.storage.getAdapter());
+    if (this.shouldDeferStartupExternalResources()) {
+      return mergeMcpServers(vaultServers, projectServers);
+    }
     const externalServers = await loadExternalCodexMcpServers({
       runtimeMode: process.platform === "win32" ? "wsl" : (_a3 = this.settings.codexRuntimeMode) != null ? _a3 : "native",
       wslDistribution: this.settings.wslDistribution,
@@ -66762,11 +66991,49 @@ var CodianPlugin = class extends import_obsidian36.Plugin {
     });
   }
   getConversationPreview(conv) {
+    if (typeof conv.preview === "string" && conv.preview.length > 0) {
+      return conv.preview;
+    }
     const firstUserMsg = conv.messages.find((m) => m.role === "user");
     if (!firstUserMsg) {
       return "New conversation";
     }
     return firstUserMsg.content.substring(0, 50) + (firstUserMsg.content.length > 50 ? "..." : "");
+  }
+  refreshConversationSummary(conversation) {
+    conversation.messageCount = conversation.messages.length;
+    conversation.preview = this.getConversationPreview({
+      ...conversation,
+      preview: void 0
+    });
+  }
+  async ensureConversationLoaded(conversation) {
+    var _a3, _b;
+    if (conversation.messagesLoaded !== false) {
+      return conversation;
+    }
+    const currentState = { ...conversation };
+    const loaded = await this.storage.sessions.loadConversation(conversation.id);
+    if (!loaded) {
+      if (conversation.isNative) {
+        conversation.messagesLoaded = true;
+        return conversation;
+      }
+      return null;
+    }
+    Object.assign(conversation, loaded, currentState, {
+      messages: loaded.messages,
+      preview: (_a3 = currentState.preview) != null ? _a3 : loaded.preview,
+      messageCount: (_b = currentState.messageCount) != null ? _b : loaded.messageCount,
+      messagesLoaded: true
+    });
+    return conversation;
+  }
+  async persistConversation(conversation) {
+    const writableConversation = await this.ensureConversationLoaded(conversation);
+    if (!writableConversation) return;
+    this.refreshConversationSummary(writableConversation);
+    await this.storage.sessions.saveConversation(writableConversation);
   }
   /** Fork has no owned session yet; still referencing the source session for resume. */
   isPendingFork(conversation) {
@@ -66874,17 +67141,17 @@ var CodianPlugin = class extends import_obsidian36.Plugin {
       createdAt: Date.now(),
       updatedAt: Date.now(),
       sessionId: sessionId != null ? sessionId : null,
-      messages: []
+      messages: [],
+      messageCount: 0,
+      preview: "New conversation",
+      messagesLoaded: true
     };
     this.conversations.unshift(conversation);
     await this.storage.sessions.saveConversation(conversation);
     return conversation;
   }
   async switchConversation(id) {
-    const conversation = this.conversations.find((c) => c.id === id);
-    if (!conversation) return null;
-    await this.loadSdkMessagesForConversation(conversation);
-    return conversation;
+    return this.getConversationById(id);
   }
   async deleteConversation(id) {
     var _a3, _b;
@@ -66907,9 +67174,11 @@ var CodianPlugin = class extends import_obsidian36.Plugin {
   async renameConversation(id, title) {
     const conversation = this.conversations.find((c) => c.id === id);
     if (!conversation) return;
-    conversation.title = title.trim() || this.generateDefaultTitle();
-    conversation.updatedAt = Date.now();
-    await this.storage.sessions.saveConversation(conversation);
+    const writableConversation = await this.ensureConversationLoaded(conversation);
+    if (!writableConversation) return;
+    writableConversation.title = title.trim() || this.generateDefaultTitle();
+    writableConversation.updatedAt = Date.now();
+    await this.persistConversation(writableConversation);
   }
   /**
    * Updates conversation properties.
@@ -66917,13 +67186,18 @@ var CodianPlugin = class extends import_obsidian36.Plugin {
   async updateConversation(id, updates) {
     const conversation = this.conversations.find((c) => c.id === id);
     if (!conversation) return;
-    Object.assign(conversation, updates, { updatedAt: Date.now() });
-    await this.storage.sessions.saveConversation(conversation);
+    const writableConversation = await this.ensureConversationLoaded(conversation);
+    if (!writableConversation) return;
+    Object.assign(writableConversation, updates, { updatedAt: Date.now() });
+    await this.persistConversation(writableConversation);
   }
   async getConversationById(id) {
     const conversation = this.conversations.find((c) => c.id === id) || null;
     if (conversation) {
-      await this.loadSdkMessagesForConversation(conversation);
+      const loadedConversation = await this.ensureConversationLoaded(conversation);
+      if (!loadedConversation) return null;
+      await this.loadSdkMessagesForConversation(loadedConversation);
+      return loadedConversation;
     }
     return conversation;
   }
@@ -66936,21 +67210,24 @@ var CodianPlugin = class extends import_obsidian36.Plugin {
   }
   /** Finds an existing empty conversation (no messages). */
   findEmptyConversation() {
-    return this.conversations.find((c) => c.messages.length === 0) || null;
+    return this.conversations.find((c) => c.messagesLoaded !== false && c.messages.length === 0) || null;
   }
   /** Returns conversation metadata list for the history dropdown. */
   getConversationList() {
-    return this.conversations.map((c) => ({
-      id: c.id,
-      title: c.title,
-      createdAt: c.createdAt,
-      updatedAt: c.updatedAt,
-      lastResponseAt: c.lastResponseAt,
-      messageCount: c.messages.length,
-      preview: this.getConversationPreview(c),
-      titleGenerationStatus: c.titleGenerationStatus,
-      isNative: false
-    }));
+    return this.conversations.map((c) => {
+      var _a3;
+      return {
+        id: c.id,
+        title: c.title,
+        createdAt: c.createdAt,
+        updatedAt: c.updatedAt,
+        lastResponseAt: c.lastResponseAt,
+        messageCount: (_a3 = c.messageCount) != null ? _a3 : c.messages.length,
+        preview: this.getConversationPreview(c),
+        titleGenerationStatus: c.titleGenerationStatus,
+        isNative: c.isNative
+      };
+    });
   }
   /** Returns the active Codian view from workspace, if open. */
   getView() {

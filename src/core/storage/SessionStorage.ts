@@ -25,6 +25,8 @@ import type { VaultFileAdapter } from './VaultFileAdapter';
 
 /** Path to sessions folder relative to vault root. */
 export const SESSIONS_PATH = '.codian/obsidian/sessions';
+const DEFAULT_LEGACY_PREVIEW = 'Conversation';
+const DEFAULT_NATIVE_PREVIEW = 'SDK session';
 
 /** Metadata record stored as first line of JSONL. */
 interface SessionMetaRecord {
@@ -46,6 +48,8 @@ interface SessionMetaRecord {
   subagentData?: Record<string, SubagentInfo>;
   resumeSessionAt?: string;
   forkSource?: Conversation['forkSource'];
+  preview?: string;
+  messageCount?: number;
 }
 
 /** Message record stored as subsequent lines. */
@@ -56,6 +60,16 @@ interface SessionMessageRecord {
 
 /** Union type for JSONL records. */
 type SessionRecord = SessionMetaRecord | SessionMessageRecord;
+type SessionMetaLike = Omit<SessionMetaRecord, 'type'> | SessionMetadata;
+
+function buildConversationPreview(messages: ChatMessage[]): string {
+  const firstUserMsg = messages.find(msg => msg.role === 'user');
+  if (!firstUserMsg) {
+    return 'New conversation';
+  }
+
+  return firstUserMsg.content.substring(0, 50) + (firstUserMsg.content.length > 50 ? '...' : '');
+}
 
 function isValidSessionMetadata(value: unknown): value is SessionMetadata {
   if (!value || typeof value !== 'object') {
@@ -98,6 +112,7 @@ export class SessionStorage {
   async deleteConversation(id: string): Promise<void> {
     try {
       await this.adapter.delete(this.getFilePath(id));
+      await this.deleteMetadata(id);
     } catch {
       // Ignore missing files
     }
@@ -158,12 +173,134 @@ export class SessionStorage {
     return { conversations, failedCount };
   }
 
+  async loadAllConversationShells(): Promise<{ conversations: Conversation[]; failedCount: number }> {
+    const conversations: Conversation[] = [];
+    let failedCount = 0;
+    const metadataById = await this.loadAllMetadataById();
+    const jsonlFilesById = await this.listSessionJsonlFilesById();
+
+    for (const [id, candidatePaths] of jsonlFilesById.entries()) {
+      const supplementalMeta = metadataById.get(id);
+      if (supplementalMeta) {
+        conversations.push(this.buildConversationShell(supplementalMeta, {
+          isNative: false,
+          messagesLoaded: false,
+        }));
+        metadataById.delete(id);
+        continue;
+      }
+
+      let loaded = false;
+      for (const filePath of candidatePaths) {
+        try {
+          const header = await this.loadMetaRecordFromHeader(filePath);
+          if (header) {
+            conversations.push(this.buildConversationShell(header, {
+              isNative: false,
+              messagesLoaded: false,
+            }));
+            loaded = true;
+            break;
+          }
+        } catch {
+          // Try fallback path for the same conversation id
+        }
+      }
+
+      if (!loaded) {
+        failedCount++;
+      }
+    }
+
+    for (const [id, meta] of metadataById.entries()) {
+      if (jsonlFilesById.has(id)) continue;
+      conversations.push(this.buildConversationShell(meta, {
+        isNative: true,
+        messagesLoaded: true,
+      }));
+    }
+
+    conversations.sort((a, b) => (b.lastResponseAt ?? b.updatedAt) - (a.lastResponseAt ?? a.updatedAt));
+
+    return { conversations, failedCount };
+  }
+
   async hasSessions(): Promise<boolean> {
     return (await this.listSessionJsonlFilesById()).size > 0;
   }
 
   getFilePath(id: string): string {
     return `${SESSIONS_PATH}/${id}.jsonl`;
+  }
+
+  private parseMetaRecord(line: string): SessionMetaRecord | null {
+    try {
+      const record = JSON.parse(line) as SessionRecord;
+      if (record.type !== 'meta') return null;
+      return record;
+    } catch {
+      return null;
+    }
+  }
+
+  private async loadMetaRecordFromHeader(filePath: string): Promise<SessionMetaRecord | null> {
+    const firstLine = await this.adapter.readFirstLine(filePath);
+    if (!firstLine) return null;
+    return this.parseMetaRecord(firstLine);
+  }
+
+  private buildConversationShell(
+    record: SessionMetaLike,
+    options: { isNative: boolean; messagesLoaded: boolean }
+  ): Conversation {
+    return {
+      id: record.id,
+      title: record.title,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+      lastResponseAt: record.lastResponseAt,
+      sessionId: record.sessionId ?? null,
+      sdkSessionId: record.sdkSessionId,
+      previousSdkSessionIds: record.previousSdkSessionIds,
+      messages: [],
+      currentNote: record.currentNote,
+      externalContextPaths: record.externalContextPaths,
+      enabledMcpServers: record.enabledMcpServers,
+      usage: record.usage,
+      titleGenerationStatus: record.titleGenerationStatus,
+      isNative: options.isNative ? true : undefined,
+      legacyCutoffAt: record.legacyCutoffAt,
+      subagentData: record.subagentData,
+      resumeSessionAt: record.resumeSessionAt,
+      forkSource: record.forkSource,
+      preview: record.preview ?? (options.isNative ? DEFAULT_NATIVE_PREVIEW : DEFAULT_LEGACY_PREVIEW),
+      messageCount: record.messageCount ?? 0,
+      messagesLoaded: options.messagesLoaded,
+    };
+  }
+
+  private async loadAllMetadataById(): Promise<Map<string, SessionMetadata>> {
+    const metadataById = new Map<string, SessionMetadata>();
+
+    try {
+      const files = await this.adapter.listFiles(SESSIONS_PATH);
+      const metaFiles = files.filter(filePath => filePath.endsWith('.meta.json'));
+
+      for (const filePath of metaFiles) {
+        try {
+          const content = await this.adapter.read(filePath);
+          const meta = JSON.parse(content);
+          if (!isValidSessionMetadata(meta)) continue;
+          metadataById.set(meta.id, meta);
+        } catch {
+          // Skip files that fail to load
+        }
+      }
+    } catch {
+      // Ignore metadata listing failures
+    }
+
+    return metadataById;
   }
 
   private async loadMetaOnly(filePath: string): Promise<ConversationMeta | null> {
@@ -174,25 +311,26 @@ export class SessionStorage {
     if (!firstLine) return null;
 
     try {
-      const record = JSON.parse(firstLine) as SessionRecord;
-      if (record.type !== 'meta') return null;
+      const record = this.parseMetaRecord(firstLine);
+      if (!record) return null;
 
       // Count messages by counting remaining lines
       const lines = content.split(/\r?\n/).filter(l => l.trim());
-      const messageCount = lines.length - 1;
+      const messageCount = record.messageCount ?? (lines.length - 1);
 
       // Get preview from first user message
-      let preview = 'New conversation';
-      for (let i = 1; i < lines.length; i++) {
-        try {
-          const msgRecord = JSON.parse(lines[i]) as SessionRecord;
-          if (msgRecord.type === 'message' && msgRecord.message.role === 'user') {
-            const content = msgRecord.message.content;
-            preview = content.substring(0, 50) + (content.length > 50 ? '...' : '');
-            break;
+      let preview = record.preview ?? 'New conversation';
+      if (!record.preview) {
+        for (let i = 1; i < lines.length; i++) {
+          try {
+            const msgRecord = JSON.parse(lines[i]) as SessionRecord;
+            if (msgRecord.type === 'message' && msgRecord.message.role === 'user') {
+              preview = buildConversationPreview([msgRecord.message]);
+              break;
+            }
+          } catch {
+            continue;
           }
-        } catch {
-          continue;
         }
       }
 
@@ -235,6 +373,9 @@ export class SessionStorage {
 
     if (!meta) return null;
 
+    const preview = meta.preview ?? buildConversationPreview(messages);
+    const messageCount = meta.messageCount ?? messages.length;
+
     return {
       id: meta.id,
       title: meta.title,
@@ -254,11 +395,16 @@ export class SessionStorage {
       subagentData: meta.subagentData,
       resumeSessionAt: meta.resumeSessionAt,
       forkSource: meta.forkSource,
+      preview,
+      messageCount,
+      messagesLoaded: true,
     };
   }
 
   private serializeToJSONL(conversation: Conversation): string {
     const lines: string[] = [];
+    const preview = conversation.preview ?? buildConversationPreview(conversation.messages);
+    const messageCount = conversation.messageCount ?? conversation.messages.length;
 
     // First line: metadata
     const meta: SessionMetaRecord = {
@@ -282,6 +428,8 @@ export class SessionStorage {
         : conversation.subagentData,
       resumeSessionAt: conversation.resumeSessionAt,
       forkSource: conversation.forkSource,
+      preview,
+      messageCount,
     };
     lines.push(JSON.stringify(meta));
 
@@ -402,8 +550,8 @@ export class SessionStorage {
           createdAt: meta.createdAt,
           updatedAt: meta.updatedAt,
           lastResponseAt: meta.lastResponseAt,
-          messageCount: 0, // Native sessions don't track message count in metadata
-          preview: 'SDK session', // SDK stores messages, we don't parse them for preview
+          messageCount: meta.messageCount ?? 0,
+          preview: meta.preview ?? DEFAULT_NATIVE_PREVIEW,
           titleGenerationStatus: meta.titleGenerationStatus,
           isNative: true,
         });
@@ -418,6 +566,8 @@ export class SessionStorage {
 
   toSessionMetadata(conversation: Conversation): SessionMetadata {
     const subagentData = this.extractSubagentData(conversation.messages);
+    const preview = conversation.preview ?? buildConversationPreview(conversation.messages);
+    const messageCount = conversation.messageCount ?? conversation.messages.length;
 
     return {
       id: conversation.id,
@@ -437,6 +587,8 @@ export class SessionStorage {
       subagentData: Object.keys(subagentData).length > 0 ? subagentData : undefined,
       resumeSessionAt: conversation.resumeSessionAt,
       forkSource: conversation.forkSource,
+      preview,
+      messageCount,
     };
   }
 
