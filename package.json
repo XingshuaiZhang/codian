@@ -1,6 +1,6 @@
 {
   "name": "codian",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Codian embeds Codex as an AI collaborator in your Obsidian vault",
   "main": "main.js",
   "scripts": {
