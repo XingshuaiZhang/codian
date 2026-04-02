@@ -61672,7 +61672,7 @@ var CodianView = class extends import_obsidian27.ItemView {
     this.navRowContent = null;
     // DOM Elements
     this.viewContainerEl = null;
-    this.headerEl = null;
+    this.contentHeaderEl = null;
     this.titleSlotEl = null;
     this.logoEl = null;
     this.titleTextEl = null;
@@ -61686,6 +61686,7 @@ var CodianView = class extends import_obsidian27.ItemView {
     this.pendingTabBarUpdate = null;
     // Debouncing for tab state persistence
     this.pendingPersist = null;
+    this.viewEventsWired = false;
     this.plugin = plugin;
     const prototypeLoad = Object.getPrototypeOf(this).load;
     const originalLoad = typeof prototypeLoad === "function" ? prototypeLoad.bind(this) : null;
@@ -61748,21 +61749,20 @@ var CodianView = class extends import_obsidian27.ItemView {
     }
   }
   async onOpen() {
-    var _a3;
     if (!this.containerEl) {
       return;
     }
-    let container = (_a3 = this.contentEl) != null ? _a3 : this.containerEl.children[1];
-    if (!container) {
-      container = this.containerEl.createDiv();
+    if (this.tabManager || this.tabBar || this.viewContainerEl) {
+      await this.resetForReopen();
     }
-    this.viewContainerEl = container;
-    this.viewContainerEl.empty();
-    this.viewContainerEl.addClass("codian-container");
-    const header = this.viewContainerEl.createDiv({ cls: "codian-header" });
+    const container = this.prepareViewContainer();
+    if (!container) {
+      return;
+    }
+    const header = container.createDiv({ cls: "codian-header" });
     this.buildHeader(header);
     this.navRowContent = this.buildNavRowContent();
-    this.tabContentEl = this.viewContainerEl.createDiv({ cls: "codian-tab-content-container" });
+    this.tabContentEl = container.createDiv({ cls: "codian-tab-content-container" });
     this.tabManager = new TabManager(
       this.plugin,
       this.plugin.mcpManager,
@@ -61796,6 +61796,57 @@ var CodianView = class extends import_obsidian27.ItemView {
     await this.restoreOrCreateTabs();
     this.updateLayoutForPosition();
   }
+  async resetForReopen() {
+    var _a3, _b;
+    if (this.pendingTabBarUpdate !== null) {
+      cancelAnimationFrame(this.pendingTabBarUpdate);
+      this.pendingTabBarUpdate = null;
+    }
+    if (this.pendingPersist !== null) {
+      clearTimeout(this.pendingPersist);
+      this.pendingPersist = null;
+    }
+    for (const ref of this.eventRefs) {
+      this.plugin.app.vault.offref(ref);
+    }
+    this.eventRefs = [];
+    await ((_a3 = this.tabManager) == null ? void 0 : _a3.destroy());
+    this.tabManager = null;
+    (_b = this.tabBar) == null ? void 0 : _b.destroy();
+    this.tabBar = null;
+    this.viewContainerEl = null;
+    this.tabBarContainerEl = null;
+    this.tabContentEl = null;
+    this.navRowContent = null;
+    this.contentHeaderEl = null;
+    this.titleSlotEl = null;
+    this.logoEl = null;
+    this.titleTextEl = null;
+    this.headerActionsEl = null;
+    this.headerActionsContent = null;
+    this.historyDropdown = null;
+  }
+  prepareViewContainer() {
+    var _a3;
+    if (!this.containerEl) {
+      return null;
+    }
+    let container = (_a3 = this.contentEl) != null ? _a3 : this.containerEl.children[1];
+    if (!container) {
+      container = this.containerEl.createDiv();
+    }
+    for (const staleContainer of Array.from(this.containerEl.querySelectorAll(".codian-container"))) {
+      if (staleContainer === container) {
+        continue;
+      }
+      staleContainer.empty();
+      staleContainer.removeClass("codian-container");
+    }
+    this.viewContainerEl = container;
+    container.empty();
+    container.addClass("codian-container");
+    return container;
+  }
   async onClose() {
     var _a3, _b;
     if (this.pendingTabBarUpdate !== null) {
@@ -61811,12 +61862,24 @@ var CodianView = class extends import_obsidian27.ItemView {
     this.tabManager = null;
     (_b = this.tabBar) == null ? void 0 : _b.destroy();
     this.tabBar = null;
+    this.viewContainerEl = null;
+    this.tabBarContainerEl = null;
+    this.tabContentEl = null;
+    this.navRowContent = null;
+    this.contentHeaderEl = null;
+    this.titleSlotEl = null;
+    this.logoEl = null;
+    this.titleTextEl = null;
+    this.headerActionsEl = null;
+    this.headerActionsContent = null;
+    this.historyDropdown = null;
+    this.viewEventsWired = false;
   }
   // ============================================
   // UI Building
   // ============================================
   buildHeader(header) {
-    this.headerEl = header;
+    this.contentHeaderEl = header;
     this.titleSlotEl = header.createDiv({ cls: "codian-title-slot" });
     this.logoEl = this.titleSlotEl.createSpan({ cls: "codian-logo" });
     this.logoEl.innerHTML = PLUGIN_LOGO_SVG;
@@ -62011,6 +62074,10 @@ var CodianView = class extends import_obsidian27.ItemView {
   // Event Wiring
   // ============================================
   wireEventHandlers() {
+    if (this.viewEventsWired) {
+      return;
+    }
+    this.viewEventsWired = true;
     this.registerDomEvent(document, "click", () => {
       var _a3;
       (_a3 = this.historyDropdown) == null ? void 0 : _a3.removeClass("visible");

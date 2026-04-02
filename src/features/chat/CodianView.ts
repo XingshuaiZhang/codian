@@ -19,7 +19,7 @@ export class CodianView extends ItemView {
 
   // DOM Elements
   private viewContainerEl: HTMLElement | null = null;
-  private headerEl: HTMLElement | null = null;
+  private contentHeaderEl: HTMLElement | null = null;
   private titleSlotEl: HTMLElement | null = null;
   private logoEl: HTMLElement | null = null;
   private titleTextEl: HTMLElement | null = null;
@@ -37,6 +37,7 @@ export class CodianView extends ItemView {
 
   // Debouncing for tab state persistence
   private pendingPersist: ReturnType<typeof setTimeout> | null = null;
+  private viewEventsWired = false;
 
   constructor(leaf: WorkspaceLeaf, plugin: CodianPlugin) {
     super(leaf);
@@ -127,30 +128,24 @@ export class CodianView extends ItemView {
       return;
     }
 
-    // Use contentEl (standard Obsidian API) as primary target.
-    // Hover Editor and other plugins may modify the DOM structure,
-    // so we need fallbacks to handle non-standard scenarios.
-    let container: HTMLElement | null =
-      this.contentEl ?? (this.containerEl.children[1] as HTMLElement | null);
-
-    if (!container) {
-      // Last resort: create our own container inside containerEl
-      container = this.containerEl.createDiv();
+    if (this.tabManager || this.tabBar || this.viewContainerEl) {
+      await this.resetForReopen();
     }
 
-    this.viewContainerEl = container;
-    this.viewContainerEl.empty();
-    this.viewContainerEl.addClass('codian-container');
+    const container = this.prepareViewContainer();
+    if (!container) {
+      return;
+    }
 
     // Build header (logo only, tab bar and actions moved to nav row)
-    const header = this.viewContainerEl.createDiv({ cls: 'codian-header' });
+    const header = container.createDiv({ cls: 'codian-header' });
     this.buildHeader(header);
 
     // Build nav row content (tab badges + header actions)
     this.navRowContent = this.buildNavRowContent();
 
     // Tab content container (TabManager will populate this)
-    this.tabContentEl = this.viewContainerEl.createDiv({ cls: 'codian-tab-content-container' });
+    this.tabContentEl = container.createDiv({ cls: 'codian-tab-content-container' });
 
     // Initialize TabManager
     this.tabManager = new TabManager(
@@ -193,6 +188,69 @@ export class CodianView extends ItemView {
     this.updateLayoutForPosition();
   }
 
+  private async resetForReopen(): Promise<void> {
+    if (this.pendingTabBarUpdate !== null) {
+      cancelAnimationFrame(this.pendingTabBarUpdate);
+      this.pendingTabBarUpdate = null;
+    }
+
+    if (this.pendingPersist !== null) {
+      clearTimeout(this.pendingPersist);
+      this.pendingPersist = null;
+    }
+
+    for (const ref of this.eventRefs) {
+      this.plugin.app.vault.offref(ref);
+    }
+    this.eventRefs = [];
+
+    await this.tabManager?.destroy();
+    this.tabManager = null;
+
+    this.tabBar?.destroy();
+    this.tabBar = null;
+    this.viewContainerEl = null;
+    this.tabBarContainerEl = null;
+    this.tabContentEl = null;
+    this.navRowContent = null;
+    this.contentHeaderEl = null;
+    this.titleSlotEl = null;
+    this.logoEl = null;
+    this.titleTextEl = null;
+    this.headerActionsEl = null;
+    this.headerActionsContent = null;
+    this.historyDropdown = null;
+  }
+
+  private prepareViewContainer(): HTMLElement | null {
+    if (!this.containerEl) {
+      return null;
+    }
+
+    // Use contentEl (standard Obsidian API) as primary target.
+    // Hover Editor and other plugins may temporarily leave it unset,
+    // so keep a conservative fallback for that startup window.
+    let container: HTMLElement | null =
+      this.contentEl ?? (this.containerEl.children[1] as HTMLElement | null);
+
+    if (!container) {
+      container = this.containerEl.createDiv();
+    }
+
+    for (const staleContainer of Array.from(this.containerEl.querySelectorAll('.codian-container'))) {
+      if (staleContainer === container) {
+        continue;
+      }
+      staleContainer.empty();
+      staleContainer.removeClass('codian-container');
+    }
+
+    this.viewContainerEl = container;
+    container.empty();
+    container.addClass('codian-container');
+    return container;
+  }
+
   async onClose() {
     // Cancel any pending tab bar update
     if (this.pendingTabBarUpdate !== null) {
@@ -216,6 +274,18 @@ export class CodianView extends ItemView {
     // Cleanup tab bar
     this.tabBar?.destroy();
     this.tabBar = null;
+    this.viewContainerEl = null;
+    this.tabBarContainerEl = null;
+    this.tabContentEl = null;
+    this.navRowContent = null;
+    this.contentHeaderEl = null;
+    this.titleSlotEl = null;
+    this.logoEl = null;
+    this.titleTextEl = null;
+    this.headerActionsEl = null;
+    this.headerActionsContent = null;
+    this.historyDropdown = null;
+    this.viewEventsWired = false;
   }
 
   // ============================================
@@ -223,7 +293,7 @@ export class CodianView extends ItemView {
   // ============================================
 
   private buildHeader(header: HTMLElement) {
-    this.headerEl = header;
+    this.contentHeaderEl = header;
 
     // Title slot container (logo + title or tabs)
     this.titleSlotEl = header.createDiv({ cls: 'codian-title-slot' });
@@ -483,6 +553,11 @@ export class CodianView extends ItemView {
   // ============================================
 
   private wireEventHandlers(): void {
+    if (this.viewEventsWired) {
+      return;
+    }
+    this.viewEventsWired = true;
+
     // Document-level click to close dropdowns
     this.registerDomEvent(document, 'click', () => {
       this.historyDropdown?.removeClass('visible');
