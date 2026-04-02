@@ -95,6 +95,56 @@ describe('CodianPlugin', () => {
       }
     });
 
+    it('normalizes persisted WSL runtime mode to native on non-Windows hosts', async () => {
+      const originalPlatform = process.platform;
+      Object.defineProperty(process, 'platform', {
+        configurable: true,
+        value: 'darwin',
+      });
+
+      mockApp.vault.adapter.exists.mockImplementation(async (path: string) => {
+        return path === '.codian/obsidian/settings.json';
+      });
+      mockApp.vault.adapter.read.mockImplementation(async (path: string) => {
+        if (path === '.codian/obsidian/settings.json') {
+          return JSON.stringify({
+            codexRuntimeMode: 'wsl',
+            locale: 'zh-CN',
+          });
+        }
+        return '';
+      });
+
+      const loadSkillsSpy = jest.spyOn(externalResources, 'loadExternalCodexSkills')
+        .mockImplementation(async (options) => {
+          expect(options.runtimeMode).toBe('native');
+          return [];
+        });
+      const loadMcpSpy = jest.spyOn(externalResources, 'loadExternalCodexMcpServers')
+        .mockImplementation(async (options) => {
+          expect(options.runtimeMode).toBe('native');
+          return [];
+        });
+
+      try {
+        await expect(plugin.onload()).resolves.not.toThrow();
+        expect(plugin.settings.codexRuntimeMode).toBe('native');
+
+        const settingsWrite = (mockApp.vault.adapter.write as jest.Mock).mock.calls.find(
+          ([path]) => path === '.codian/obsidian/settings.json'
+        );
+        expect(settingsWrite).toBeDefined();
+        expect(JSON.parse(settingsWrite[1]).codexRuntimeMode).toBe('native');
+      } finally {
+        loadSkillsSpy.mockRestore();
+        loadMcpSpy.mockRestore();
+        Object.defineProperty(process, 'platform', {
+          configurable: true,
+          value: originalPlatform,
+        });
+      }
+    });
+
     it('should initialize settings with defaults', async () => {
       await plugin.onload();
 
@@ -108,6 +158,16 @@ describe('CodianPlugin', () => {
     it('should register the view', async () => {
       await plugin.onload();
 
+      expect((plugin.registerView as jest.Mock)).toHaveBeenCalledWith(
+        VIEW_TYPE_CODIAN,
+        expect.any(Function)
+      );
+    });
+
+    it('should initialize without crashing when vault adapter has no basePath', async () => {
+      delete mockApp.vault.adapter.basePath;
+
+      await expect(plugin.onload()).resolves.not.toThrow();
       expect((plugin.registerView as jest.Mock)).toHaveBeenCalledWith(
         VIEW_TYPE_CODIAN,
         expect.any(Function)

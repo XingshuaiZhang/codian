@@ -29852,7 +29852,10 @@ var path = __toESM(require("path"));
 function getVaultPath(app) {
   const adapter = app.vault.adapter;
   if ("basePath" in adapter) {
-    return adapter.basePath;
+    const basePath = adapter.basePath;
+    if (typeof basePath === "string") {
+      return basePath;
+    }
   }
   return null;
 }
@@ -30901,6 +30904,7 @@ var AgentManager = class {
     }
   }
   async loadVaultAgents() {
+    if (!this.vaultPath) return;
     for (const vaultAgentsDir of VAULT_AGENTS_DIRS) {
       await this.loadAgentsFromDirectory(path3.join(this.vaultPath, vaultAgentsDir), "vault");
     }
@@ -61683,16 +61687,28 @@ var CodianView = class extends import_obsidian27.ItemView {
     // Debouncing for tab state persistence
     this.pendingPersist = null;
     this.plugin = plugin;
-    const originalLoad = Object.getPrototypeOf(this).load.bind(this);
+    const prototypeLoad = Object.getPrototypeOf(this).load;
+    const originalLoad = typeof prototypeLoad === "function" ? prototypeLoad.bind(this) : null;
     Object.defineProperty(this, "load", {
       value: async () => {
         if (!this.containerEl) {
           this.containerEl = createDiv({ cls: "view-content" });
         }
-        try {
-          return await originalLoad();
-        } catch (e) {
+        if (originalLoad) {
+          try {
+            const result = await originalLoad();
+            if (this.tabManager || this.viewContainerEl) {
+              return result;
+            }
+          } catch (error48) {
+            if (this.tabManager || this.viewContainerEl) {
+              throw error48;
+            }
+            await this.onOpen();
+            return;
+          }
         }
+        await this.onOpen();
       },
       writable: false,
       configurable: false
@@ -66529,8 +66545,8 @@ var CodianPlugin = class extends import_obsidian36.Plugin {
       load: () => this.loadAllMcpServers()
     });
     await this.mcpManager.loadServers();
-    const vaultPath = this.app.vault.adapter.basePath;
-    this.pluginManager = new PluginManager(vaultPath, this.storage.ccSettings);
+    const vaultPath = getVaultPath(this.app);
+    this.pluginManager = new PluginManager(vaultPath != null ? vaultPath : "", this.storage.ccSettings);
     await this.pluginManager.loadPlugins();
     this.agentManager = new AgentManager(vaultPath, this.pluginManager);
     await this.agentManager.loadAgents();
@@ -66682,6 +66698,7 @@ var CodianPlugin = class extends import_obsidian36.Plugin {
       slashCommands: []
     };
     this.runtimeEnvironmentVariables = this.settings.environmentVariables || "";
+    const didNormalizeRuntimeMode = this.normalizeRuntimeModeForHost();
     this.settings.slashCommands = await this.loadAllSlashCommands();
     if (this.settings.permissionMode === "plan") {
       this.settings.permissionMode = "normal";
@@ -66718,7 +66735,7 @@ var CodianPlugin = class extends import_obsidian36.Plugin {
     }
     this.runtimeEnvironmentVariables = sanitizedEnvText;
     const { changed, invalidatedConversations } = this.reconcileModelWithEnvironment(this.runtimeEnvironmentVariables);
-    if (changed || didNormalizeModelVariants || didMigrateCliPath) {
+    if (changed || didNormalizeModelVariants || didMigrateCliPath || didNormalizeRuntimeMode) {
       await this.saveSettings();
     }
     if (removedAuthKeys.length > 0) {
@@ -66744,6 +66761,14 @@ var CodianPlugin = class extends import_obsidian36.Plugin {
       }
     }
     return updated;
+  }
+  normalizeRuntimeModeForHost() {
+    const supportedRuntimeMode = process.platform === "win32" ? "wsl" : "native";
+    if (this.settings.codexRuntimeMode === supportedRuntimeMode) {
+      return false;
+    }
+    this.settings.codexRuntimeMode = supportedRuntimeMode;
+    return true;
   }
   normalizeModelVariantSettings() {
     const { enableOpus1M, enableSonnet1M } = this.settings;

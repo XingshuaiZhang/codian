@@ -16,7 +16,10 @@ import * as path from 'path';
 export function getVaultPath(app: App): string | null {
   const adapter = app.vault.adapter;
   if ('basePath' in adapter) {
-    return (adapter as any).basePath;
+    const basePath = (adapter as { basePath?: unknown }).basePath;
+    if (typeof basePath === 'string') {
+      return basePath;
+    }
   }
   return null;
 }

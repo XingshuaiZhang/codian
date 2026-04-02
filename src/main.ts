@@ -51,6 +51,7 @@ import {
 } from './utils/codexExternalResources';
 import { buildCursorContext } from './utils/editor';
 import { parseEnvironmentVariables } from './utils/env';
+import { getVaultPath } from './utils/path';
 
 // ============================================
 // Subagent data merge helpers (pure functions)
@@ -216,8 +217,8 @@ export default class CodianPlugin extends Plugin {
     await this.mcpManager.loadServers();
 
     // Initialize plugin manager (reads from installed_plugins.json + settings.json)
-    const vaultPath = (this.app.vault.adapter as any).basePath;
-    this.pluginManager = new PluginManager(vaultPath, this.storage.ccSettings);
+    const vaultPath = getVaultPath(this.app);
+    this.pluginManager = new PluginManager(vaultPath ?? '', this.storage.ccSettings);
     await this.pluginManager.loadPlugins();
 
     // Initialize agent manager (loads plugin agents from plugin install paths)
@@ -399,6 +400,7 @@ export default class CodianPlugin extends Plugin {
       slashCommands: [],
     };
     this.runtimeEnvironmentVariables = this.settings.environmentVariables || '';
+    const didNormalizeRuntimeMode = this.normalizeRuntimeModeForHost();
 
     this.settings.slashCommands = await this.loadAllSlashCommands();
 
@@ -444,7 +446,7 @@ export default class CodianPlugin extends Plugin {
     this.runtimeEnvironmentVariables = sanitizedEnvText;
     const { changed, invalidatedConversations } = this.reconcileModelWithEnvironment(this.runtimeEnvironmentVariables);
 
-    if (changed || didNormalizeModelVariants || didMigrateCliPath) {
+    if (changed || didNormalizeModelVariants || didMigrateCliPath || didNormalizeRuntimeMode) {
       await this.saveSettings();
     }
 
@@ -475,6 +477,18 @@ export default class CodianPlugin extends Plugin {
       }
     }
     return updated;
+  }
+
+  private normalizeRuntimeModeForHost(): boolean {
+    const supportedRuntimeMode: NonNullable<CodianSettings['codexRuntimeMode']> =
+      process.platform === 'win32' ? 'wsl' : 'native';
+
+    if (this.settings.codexRuntimeMode === supportedRuntimeMode) {
+      return false;
+    }
+
+    this.settings.codexRuntimeMode = supportedRuntimeMode;
+    return true;
   }
 
   normalizeModelVariantSettings(): boolean {

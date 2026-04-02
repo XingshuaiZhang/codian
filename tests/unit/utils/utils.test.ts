@@ -44,6 +44,20 @@ describe('utils.ts', () => {
       expect(result).toBeNull();
     });
 
+    it('should return null when basePath is present but not a string', () => {
+      const mockApp = {
+        vault: {
+          adapter: {
+            basePath: undefined,
+          },
+        },
+      } as any;
+
+      const result = getVaultPath(mockApp);
+
+      expect(result).toBeNull();
+    });
+
     it('should return null when adapter is undefined', () => {
       const mockApp = {
         vault: {

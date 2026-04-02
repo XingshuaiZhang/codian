@@ -45,7 +45,10 @@ export class CodianView extends ItemView {
     // Hover Editor compatibility: Define load as an instance method that can't be
     // overwritten by prototype patching. Hover Editor patches CodianView.prototype.load
     // after our class is defined, but instance methods take precedence over prototype methods.
-    const originalLoad = Object.getPrototypeOf(this).load.bind(this);
+    const prototypeLoad = Object.getPrototypeOf(this).load;
+    const originalLoad = typeof prototypeLoad === 'function'
+      ? prototypeLoad.bind(this) as (() => Promise<unknown>)
+      : null;
     Object.defineProperty(this, 'load', {
       value: async () => {
         // Ensure containerEl exists before any patched load code tries to use it
@@ -53,12 +56,26 @@ export class CodianView extends ItemView {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (this as any).containerEl = createDiv({ cls: 'view-content' });
         }
-        // Wrap in try-catch to prevent Hover Editor errors from breaking our view
-        try {
-          return await originalLoad();
-        } catch {
-          // Hover Editor may throw if its DOM setup fails - continue anyway
+
+        if (originalLoad) {
+          try {
+            const result = await originalLoad();
+            if (this.tabManager || this.viewContainerEl) {
+              return result;
+            }
+          } catch (error) {
+            // If base load failed before the view initialized, fall back to our
+            // direct onOpen path instead of leaving the view blank.
+            if (this.tabManager || this.viewContainerEl) {
+              throw error;
+            }
+
+            await this.onOpen();
+            return;
+          }
         }
+
+        await this.onOpen();
       },
       writable: false,
       configurable: false,

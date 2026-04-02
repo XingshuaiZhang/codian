@@ -45,10 +45,10 @@ function normalizePluginName(name: string): string {
 export class AgentManager {
   private agents: AgentDefinition[] = [];
   private builtinAgentNames: string[] = FALLBACK_BUILTIN_AGENT_NAMES;
-  private vaultPath: string;
+  private vaultPath: string | null;
   private pluginManager: PluginManager;
 
-  constructor(vaultPath: string, pluginManager: PluginManager) {
+  constructor(vaultPath: string | null, pluginManager: PluginManager) {
     this.vaultPath = vaultPath;
     this.pluginManager = pluginManager;
   }
@@ -112,6 +112,8 @@ export class AgentManager {
   }
 
   private async loadVaultAgents(): Promise<void> {
+    if (!this.vaultPath) return;
+
     for (const vaultAgentsDir of VAULT_AGENTS_DIRS) {
       await this.loadAgentsFromDirectory(path.join(this.vaultPath, vaultAgentsDir), 'vault');
     }
